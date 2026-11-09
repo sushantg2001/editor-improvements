@@ -133,3 +133,36 @@ describe("the README example", () => {
 		expect(registry.bindings().length).toBeGreaterThan(0);
 	});
 });
+
+describe("the commit and branch types", () => {
+	const TYPES = ["feat", "fix", "perf", "refactor", "test", "docs", "build", "ci", "chore", "style", "revert"];
+	const workflow = read(".github/workflows/pr-title.yml");
+
+	it("are the same in the PR title check and the branch check", () => {
+		const patterns = [...workflow.matchAll(/\^\(?\(?((?:[a-z]+\|)+[a-z]+)\)/g)].map((m) => (m[1] ?? "").split("|"));
+
+		expect(patterns.length).toBe(2);
+		for (const types of patterns) {
+			expect(types).toEqual(TYPES);
+		}
+	});
+
+	it.each(["CONTRIBUTING.md", "docs/sdlc.md"])("are all named in %s", (file) => {
+		const text = read(file);
+
+		for (const type of TYPES) {
+			expect(text, `${type} in ${file}`).toMatch(new RegExp(`\\b${type}\\b`));
+		}
+	});
+
+	it("accept the branch names this repository uses", () => {
+		const pattern = /^((feat|fix|perf|refactor|test|docs|build|ci|chore|style|revert)\/[a-z0-9][a-z0-9._-]*|release-please--.+)$/;
+
+		for (const branch of ["feat/editor-shortcuts", "fix/key-names", "docs/release-types", "release-please--branches--main--components--vim-tools"]) {
+			expect(pattern.test(branch), branch).toBe(true);
+		}
+		for (const branch of ["claude/anything", "feature/x", "Fix/Upper", "fix/"]) {
+			expect(pattern.test(branch), branch).toBe(false);
+		}
+	});
+});
