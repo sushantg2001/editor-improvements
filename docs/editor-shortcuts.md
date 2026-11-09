@@ -13,6 +13,9 @@ No keys are bound by default. Bind the ones you want in `init.js` or in Settings
 - **Editing commands finish like vim commands.** Run from visual mode they leave it, with a cursor at the start of
   what they changed. In normal mode the cursor never rests on a newline. In insert mode they leave you in insert
   mode.
+- **Counts work.** `3` before a delete, copy, open-line or word-delete command does it three times as one change
+  (`3J` joins three lines, as in vim). In visual mode the count is ignored, as vim ignores it there. Commands that
+  work on a position, such as delete to end of line, run once.
 - **Edits repeat with `.`.** Deleting, joining, copying, opening a line and changing case are all remembered as
   changes. Motions and selections are not.
 - **One selection.** Obsidian's vim keeps a single selection, so the multiple-cursor commands use what vim has
