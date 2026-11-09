@@ -21,8 +21,12 @@ export class ModeTracker extends Component {
 	private readonly listeners: ((mode: VimMode) => void)[] = [];
 	private readonly modeChanges = new CmListeners(
 		"vim-mode-change",
-		() => (...args: unknown[]) => {
-			this.handleModeChange(args[0] as VimModeChangeEvent | undefined);
+		(cm) => (...args: unknown[]) => {
+			// Handlers stay on every editor ever attached, but the status bar
+			// describes the one in front.
+			if (cm === getActiveCm(this.app)) {
+				this.handleModeChange(args[0] as VimModeChangeEvent | undefined);
+			}
 		},
 	);
 
