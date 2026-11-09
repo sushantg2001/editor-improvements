@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionRegistry } from "../../../src/core/registry";
 import { ScriptHost } from "../../../src/scripts/loader";
+import { TYPINGS, TYPINGS_FILENAME } from "../../../src/scripts/typings";
 import { App, Notice } from "../../mocks/obsidian";
 
 const FOLDER = ".obsidian/vim-tools";
@@ -257,7 +258,9 @@ describe("ScriptHost.reload when reloads overlap", () => {
 		const adapter = app.vault.adapter;
 		const original = adapter.read.bind(adapter);
 		adapter.read = async (path: string) => {
-			reads++;
+			if (path.endsWith("init.js")) {
+				reads++;
+			}
 			return original(path);
 		};
 
@@ -361,5 +364,74 @@ describe("ScriptHost folder watching", () => {
 		await settle();
 
 		expect(t.reload).not.toHaveBeenCalled();
+	});
+});
+
+describe("ScriptHost typings", () => {
+	const TYPINGS_PATH = `${FOLDER}/${TYPINGS_FILENAME}`;
+
+	it("rewrites a stale vim-tools.d.ts, so an update's new API reaches the editor", async () => {
+		const { host, app } = setup({ "init.js": "", [TYPINGS_FILENAME]: "// from an older version" });
+
+		await host.reload();
+
+		expect(app.vault.adapter.files.get(TYPINGS_PATH)).toBe(TYPINGS);
+	});
+
+	it("creates it when the folder exists without one", async () => {
+		const { host, app } = setup({ "init.js": "" });
+
+		await host.reload();
+
+		expect(app.vault.adapter.files.get(TYPINGS_PATH)).toBe(TYPINGS);
+	});
+
+	it("leaves a current one untouched", async () => {
+		const { host, app } = setup({ "init.js": "", [TYPINGS_FILENAME]: TYPINGS });
+		const write = vi.spyOn(app.vault.adapter, "write");
+
+		await host.reload();
+
+		expect(write).not.toHaveBeenCalled();
+	});
+
+	it("does not create the folder, or write anything, while scripts are off", async () => {
+		const { host, app } = setup({}, false);
+		app.vault.adapter.dirs.clear();
+
+		await host.reload();
+
+		expect(app.vault.adapter.files.has(TYPINGS_PATH)).toBe(false);
+		expect(await app.vault.adapter.exists(FOLDER)).toBe(false);
+	});
+
+	it("does not create the folder when scripts are on but there is none", async () => {
+		const { host, app } = setup({});
+		app.vault.adapter.dirs.clear();
+
+		await host.reload();
+
+		expect(await app.vault.adapter.exists(FOLDER)).toBe(false);
+	});
+
+	it("never runs the typings file as a script", async () => {
+		const { host } = setup({ "init.js": "", [TYPINGS_FILENAME]: TYPINGS });
+
+		const result = await host.reload();
+
+		expect(result.loaded).toEqual(["init.js"]);
+		expect(result.errors).toEqual([]);
+	});
+
+	it("still loads scripts when the typings cannot be written", async () => {
+		const { host, app, registry } = setup({ "init.js": `vim.action("a", () => {});` });
+		app.vault.adapter.write = async () => {
+			throw new Error("read-only");
+		};
+
+		const result = await host.reload();
+
+		expect(result.errors).toEqual([]);
+		expect(registry.has("a")).toBe(true);
 	});
 });
