@@ -121,11 +121,17 @@ export class VimDispatcher {
 			return undefined;
 		}
 		const first = ranges?.[0];
-		const result = this.execute(id, ctx, {
-			repeat: operatorArgs?.repeat ?? 1,
-			range: first ? { from: first.anchor, to: first.head } : undefined,
-		});
-		return isPosition(result) ? result : undefined;
+		// Vim hands operators their range in document order, even after a
+		// backward motion such as `b` or `0`.
+		const range = first ? { from: first.anchor, to: first.head } : undefined;
+		const result = this.execute(id, ctx, { repeat: operatorArgs?.repeat ?? 1, range });
+		if (isPosition(result)) {
+			return result;
+		}
+		// Vim's own operators leave the cursor at the start of what they covered.
+		// Returning nothing here would leave the selection vim built for the
+		// motion standing in normal mode, with the cursor at its far end.
+		return range?.from;
 	}
 
 	private runAction(id: string, args: unknown[]): void {
