@@ -1,13 +1,8 @@
-import { Notice, Plugin } from "obsidian";
+import { MarkdownView, Notice, Plugin } from "obsidian";
 
 import { CommandSurface } from "./core/commands";
 import { VimDispatcher } from "./core/dispatch";
-import {
-	getActiveCm,
-	getActiveEditorView,
-	getActiveMarkdownView,
-	getVimMode,
-} from "./core/editor";
+import { getActiveCm, getActiveMarkdownView, getVimMode } from "./core/editor";
 import { ModeTracker } from "./core/modes";
 import { ModuleHost } from "./core/modules";
 import { ActionRegistry } from "./core/registry";
@@ -169,10 +164,28 @@ export default class VimToolsPlugin extends Plugin {
 		});
 	}
 
+	/**
+	 * The markdown view that owns `cm`: the editor the key was typed in.
+	 *
+	 * Obsidian's idea of the active view can lag behind where keys are going, as
+	 * with a hover popover or a second pane, and running an action against the
+	 * active view then edits a different note. The active view is only the
+	 * fallback, for an editor that is not an open markdown view.
+	 */
+	private viewFor(cm: CodeMirrorShim): MarkdownView | null {
+		for (const leaf of this.app.workspace.getLeavesOfType("markdown")) {
+			const view = leaf.view;
+			if (view instanceof MarkdownView && view.editor.cm?.cm === cm) {
+				return view;
+			}
+		}
+		return getActiveMarkdownView(this.app);
+	}
+
 	/** Assembles everything an action needs, or null when there is no editor. */
 	private buildContext(cm: CodeMirrorShim): VimContext | null {
-		const view = getActiveMarkdownView(this.app);
-		const editorView = getActiveEditorView(this.app);
+		const view = this.viewFor(cm);
+		const editorView = view?.editor.cm;
 		if (!view || !editorView) {
 			return null;
 		}
