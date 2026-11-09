@@ -26,7 +26,14 @@ export function moduleHarness(
 	const app = new App();
 	const registry = new ActionRegistry();
 	const settings = { ...DEFAULT_SETTINGS, ...options.settings };
-	const fakeEditor = { undo: vi.fn(), redo: vi.fn() };
+	const fakeEditor = {
+		undo: vi.fn(),
+		redo: vi.fn(),
+		// What Obsidian's Editor does with a selection: replace it, cursor after the text.
+		replaceSelection: (text: string) => {
+			editor.view.dispatch(editor.view.state.replaceSelection(text));
+		},
+	};
 
 	const host = new ModuleHost({
 		registry,
