@@ -1,4 +1,4 @@
-import type { ActionRegistry, BindingTarget, SourcedBinding } from "./registry";
+import type { ActionRegistry, BindingTarget, SourcedBinding, UnmapSpec } from "./registry";
 import type { VimDispatcher } from "./dispatch";
 import type { ActionSource, BindingContext, VimApi } from "../types";
 
@@ -120,15 +120,49 @@ function withOperatorPending(bindings: ResolvedBinding[]): ResolvedBinding[] {
  */
 export class MappingLedger {
 	private applied: { keys: string; context: BindingContext }[] = [];
+	/**
+	 * Built-in bindings already removed this session.
+	 *
+	 * `Vim.unmap` removes the first entry that matches, and after the built-in
+	 * one is gone that would be somebody else's. So each is removed once. Unlike
+	 * our own bindings, a removed built-in cannot be handed back: vim exposes no
+	 * way to restore it, so it stays gone until Obsidian restarts.
+	 */
+	private readonly released = new Set<string>();
 
-	/** Replaces every binding we own with `bindings`. */
-	apply(vim: VimApi, dispatcher: VimDispatcher, bindings: ResolvedBinding[]): void {
+	/**
+	 * Replaces every binding we own with `bindings`, after clearing the built-in
+	 * bindings in `unmaps` out of the way.
+	 *
+	 * The order matters. A key such as `S` must stop meaning "change line"
+	 * before `Sl` can be reached, and removing it after mapping could take out
+	 * one of our own bindings instead.
+	 */
+	apply(
+		vim: VimApi,
+		dispatcher: VimDispatcher,
+		bindings: ResolvedBinding[],
+		unmaps: UnmapSpec[] = [],
+	): void {
 		this.clear(vim);
+		this.release(vim, unmaps);
 		for (const binding of bindings) {
 			if (!this.applyOne(vim, dispatcher, binding)) {
 				continue;
 			}
 			this.applied.push({ keys: binding.keys, context: binding.context });
+		}
+	}
+
+	private release(vim: VimApi, unmaps: UnmapSpec[]): void {
+		for (const { keys, contexts } of unmaps) {
+			for (const context of contexts ?? [undefined]) {
+				const slot = `${context ?? "all"}:${keys}`;
+				if (!this.released.has(slot)) {
+					this.released.add(slot);
+					vim.unmap(keys, context);
+				}
+			}
 		}
 	}
 

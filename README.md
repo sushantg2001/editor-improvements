@@ -44,6 +44,10 @@ vim.nmap("gL", "toLastLine");
 anything else is passed to vim as an ordinary remap. Every action also becomes an Obsidian command, so it gets a
 hotkey slot in Settings → Hotkeys.
 
+`vim.nunmap("S")` (also `vunmap`, `iunmap`, `ounmap` and `unmap`) removes a built-in binding so the key can start a
+longer mapping, like `Sl`. Unlike a mapping it is not undone when you edit the script: the key stays free until
+Obsidian restarts.
+
 ## What it does
 
 - Reads the Vim API Obsidian already exposes, and re-attaches when vim mode is toggled.

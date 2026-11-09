@@ -16,10 +16,18 @@ export interface BindingSpec {
 	target: BindingTarget;
 }
 
+/** Keys whose built-in vim binding a source wants out of the way. */
+export interface UnmapSpec {
+	keys: string;
+	/** Omit to remove the binding whatever context it is in. */
+	contexts?: BindingContext[];
+}
+
 /** Everything one source contributes, applied and removed as a unit. */
 export interface Contribution {
 	actions?: VimActionDef[];
 	bindings?: BindingSpec[];
+	unmaps?: UnmapSpec[];
 }
 
 /** A binding together with the source that asked for it. */
@@ -104,6 +112,15 @@ export class ActionRegistry {
 			for (const binding of contribution.bindings ?? []) {
 				all.push({ ...binding, source });
 			}
+		}
+		return all;
+	}
+
+	/** Every built-in binding a source asked to remove, in source order. */
+	unmaps(): UnmapSpec[] {
+		const all: UnmapSpec[] = [];
+		for (const contribution of this.contributions.values()) {
+			all.push(...(contribution.unmaps ?? []));
 		}
 		return all;
 	}
