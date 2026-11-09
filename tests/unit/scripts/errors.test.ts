@@ -130,7 +130,7 @@ describe("declaring things after the script has finished", () => {
 		}).reload();
 
 		// Run long after the script has finished.
-		registry.get("go")?.run({ app } as never, { repeat: 1 });
+		await registry.get("go")?.run({ app } as never, { repeat: 1 });
 
 		expect(executed).toEqual(["daily-notes"]);
 	});
