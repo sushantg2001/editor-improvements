@@ -74,4 +74,27 @@ describe("MappingLedger unmaps against the real Vim API", () => {
 		expect(view.state.doc.toString()).toBe("ello");
 		vimApi.unmap("S", "normal");
 	});
+
+	it("frees a built-in that has no mode of its own, which asking for one mode never finds", () => {
+		// <Space> is one entry for every mode. Vim matches the mode exactly, so
+		// unmapping it "in normal mode" removed nothing, and <Space>d stayed
+		// hidden behind it.
+		const { registry, dispatcher, ledger, cm, view } = harness("hello");
+		registry.set("test", {
+			bindings: [
+				{
+					keys: "<Space>d",
+					contexts: ["normal"],
+					target: { kind: "keys", rhs: "x", recursive: false },
+				},
+			],
+		});
+
+		ledger.apply(vimApi, dispatcher, resolveBindings(registry).bindings, [
+			{ keys: "<Space>", contexts: ["normal"] },
+		]);
+		press(cm, "<Space>", "d");
+
+		expect(view.state.doc.toString()).toBe("ello");
+	});
 });

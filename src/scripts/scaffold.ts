@@ -10,6 +10,9 @@ const STARTER_INIT = `// Vim Tools configuration. Reloads automatically when you
 
 // What <leader> expands to in the mappings below.
 vim.leader(" ");
+// Space already moves right, and a key that means something on its own hides
+// every longer mapping that starts with it. Free it to use it as the leader.
+vim.nunmap("<Space>");
 
 // Plain remaps, exactly as in a vimrc.
 vim.inoremap("jk", "<Esc>");

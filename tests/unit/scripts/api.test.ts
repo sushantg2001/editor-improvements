@@ -160,7 +160,8 @@ describe("mapping", () => {
 		api.leader(",");
 		api.nmap("<leader>f", "x");
 
-		expect(bindings[0]?.keys).toBe(" d");
+		// A space leader is stored as the name the Vim addon gives that key.
+		expect(bindings[0]?.keys).toBe("<Space>d");
 		expect(bindings[1]?.keys).toBe(",f");
 	});
 
@@ -267,7 +268,7 @@ describe("unmap", () => {
 
 		t.api.nunmap("<leader>");
 
-		expect(t.unmaps[0]?.keys).toBe(" ");
+		expect(t.unmaps[0]?.keys).toBe("<Space>");
 	});
 
 	it("applies nothing by itself", () => {
