@@ -190,3 +190,25 @@ describe("ScriptHost teardown", () => {
 		expect(registry.actions()).toHaveLength(0);
 	});
 });
+
+describe("ScriptHost with an action named like a plugin command", () => {
+	it("refuses it, so the script cannot replace Reload configuration", async () => {
+		const { host, registry } = setup({ "init.js": `vim.action("reload-config", () => {});` });
+
+		const result = await host.reload();
+
+		expect(result.loaded).toEqual([]);
+		expect(result.errors[0]?.message).toMatch(/reload-config/);
+		expect(registry.has("reload-config")).toBe(false);
+	});
+
+	it("accepts it when it is kept out of the command palette", async () => {
+		const { host, registry } = setup({
+			"init.js": `vim.action("reload-config", () => {}, { command: false });`,
+		});
+
+		await host.reload();
+
+		expect(registry.has("reload-config")).toBe(true);
+	});
+});
