@@ -3,7 +3,7 @@ import type { TransactionSpec } from "@codemirror/state";
 import type { App } from "obsidian";
 
 import { clampToNormal, offsetToPos, placeSelection, posToOffset } from "../../core/vim-editing";
-import { isInsertLike, isVisual } from "../../core/vim-modes";
+import { isInsertLike, isVisual, sendKey } from "../../core/vim-modes";
 import type { FeatureModule, ModuleContext } from "../../core/modules";
 import type { Contribution } from "../../core/registry";
 import type { VimActionDef, VimContext } from "../../types";
@@ -261,13 +261,13 @@ function selectLine(getVim: ModuleContext["getVim"]): VimActionDef {
 				return;
 			}
 			if (c.mode === "visual-line") {
-				vim.handleKey(c.cm, "j", "user");
+				sendKey(vim, c.cm, "j");
 				return;
 			}
 			if (isVisual(c.cm)) {
 				vim.exitVisualMode(c.cm);
 			}
-			vim.handleKey(c.cm, "V", "user");
+			sendKey(vim, c.cm, "V");
 		},
 	};
 }
@@ -302,7 +302,7 @@ function selectAllOccurrences(getVim: ModuleContext["getVim"]): VimActionDef {
 			}
 			// `*` searches for the word under the cursor, wherever in it.
 			c.view.dispatch({ selection: EditorSelection.cursor(line.from + start) });
-			vim.handleKey(c.cm, "*", "user");
+			sendKey(vim, c.cm, "*");
 		},
 	};
 }
@@ -333,9 +333,9 @@ function blockCursor(
 				} else if (isVisual(c.cm)) {
 					vim.exitVisualMode(c.cm);
 				}
-				vim.handleKey(c.cm, "<C-v>", "user");
+				sendKey(vim, c.cm, "<C-v>");
 			}
-			vim.handleKey(c.cm, key, "user");
+			sendKey(vim, c.cm, key);
 		},
 	};
 }
@@ -368,16 +368,16 @@ function addCursorsToSelectionEnds(getVim: ModuleContext["getVim"]): VimActionDe
 				vim.exitVisualMode(c.cm);
 			}
 			c.view.dispatch({ selection: EditorSelection.cursor(first.from) });
-			vim.handleKey(c.cm, "<C-v>", "user");
+			sendKey(vim, c.cm, "<C-v>");
 			if (last.number > first.number) {
 				// By line number rather than `j`, which would count wrapped lines.
 				for (const digit of String(last.number)) {
-					vim.handleKey(c.cm, digit, "user");
+					sendKey(vim, c.cm, digit);
 				}
-				vim.handleKey(c.cm, "G", "user");
+				sendKey(vim, c.cm, "G");
 			}
-			vim.handleKey(c.cm, "$", "user");
-			vim.handleKey(c.cm, "A", "user");
+			sendKey(vim, c.cm, "$");
+			sendKey(vim, c.cm, "A");
 		},
 	};
 }

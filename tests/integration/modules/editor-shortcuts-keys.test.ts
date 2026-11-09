@@ -153,3 +153,32 @@ describe("commands with vim unavailable", () => {
 		}).not.toThrow();
 	});
 });
+
+describe("keys the commands send to vim are not recorded into macros", () => {
+	// Recording `gl` for `selectLine` must store `gl`, not `glV`: replaying that
+	// would run the command, which sends V, and then press V again.
+	const recorded = (setup: (t: ReturnType<typeof moduleHarness>) => void, keys: string[]) => {
+		const t = moduleHarness(editorShortcutsModule, "alpha bravo\ncharlie\ndelta");
+		setup(t);
+		press(t.cm, "q", "a", ...keys, "<Esc>", "q");
+		return vimApi.getRegisterController().getRegister("a").toString();
+	};
+
+	it("selectLine", () => {
+		expect(recorded((t) => t.bind("gl", "selectLine"), ["g", "l"])).toBe("gl<Esc>");
+	});
+
+	it("insertCursorBelow", () => {
+		expect(recorded((t) => t.bind("gj", "insertCursorBelow"), ["g", "j"])).toBe("gj<Esc>");
+	});
+
+	it("addCursorsToSelectionEnds", () => {
+		expect(
+			recorded((t) => t.bind("ga", "addCursorsToSelectionEnds"), ["V", "2", "G", "g", "a"]),
+		).toBe("V2Gga"); // it ends in insert mode, whose own <Esc> vim does not log here
+	});
+
+	it("selectAllOccurrences", () => {
+		expect(recorded((t) => t.bind("g*", "selectAllOccurrences"), ["g", "*"])).toBe("g*<Esc>");
+	});
+});
