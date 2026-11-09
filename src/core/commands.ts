@@ -17,7 +17,8 @@ import type { CodeMirrorShim } from "../types";
  * we replace so migration is a mechanical prefix swap.
  */
 export class CommandSurface {
-	private readonly registered = new Set<string>();
+	/** What each registered command was registered with, to notice when it changes. */
+	private readonly registered = new Map<string, { name: string; needsEditor: boolean }>();
 
 	constructor(
 		private readonly plugin: Plugin,
@@ -26,7 +27,14 @@ export class CommandSurface {
 		private readonly getCm: () => CodeMirrorShim | null,
 	) {}
 
-	/** Adds commands for new actions and removes those whose action is gone. */
+	/**
+	 * Adds commands for new actions, removes those whose action is gone, and
+	 * re-registers one whose name or editor requirement has changed.
+	 *
+	 * A command's name and kind are fixed when it is added, so an action that a
+	 * script edit renames, or turns into one that needs no editor, would
+	 * otherwise keep its old palette entry until Obsidian restarted.
+	 */
 	sync(): void {
 		const wanted = new Set<string>();
 
@@ -35,14 +43,19 @@ export class CommandSurface {
 				continue;
 			}
 			wanted.add(def.id);
-			if (this.registered.has(def.id)) {
+			const next = { name: def.name, needsEditor: def.needsEditor !== false };
+			const current = this.registered.get(def.id);
+			if (current?.name === next.name && current.needsEditor === next.needsEditor) {
 				continue;
 			}
-			this.add(def.id, def.name, def.needsEditor !== false);
-			this.registered.add(def.id);
+			if (current) {
+				this.plugin.removeCommand(def.id);
+			}
+			this.add(def.id, next.name, next.needsEditor);
+			this.registered.set(def.id, next);
 		}
 
-		for (const id of [...this.registered]) {
+		for (const id of [...this.registered.keys()]) {
 			if (!wanted.has(id)) {
 				this.plugin.removeCommand(id);
 				this.registered.delete(id);
@@ -51,7 +64,7 @@ export class CommandSurface {
 	}
 
 	clear(): void {
-		for (const id of this.registered) {
+		for (const id of this.registered.keys()) {
 			this.plugin.removeCommand(id);
 		}
 		this.registered.clear();
