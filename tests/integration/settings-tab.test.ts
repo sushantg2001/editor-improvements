@@ -17,8 +17,8 @@ async function open() {
 	const plugin = new EditorImprovementsPlugin(new App() as never, {} as never);
 	await plugin.onload();
 	const tab = (plugin as unknown as { settingTab: EditorImprovementsSettingTab }).settingTab;
-	// eslint-disable-next-line @typescript-eslint/no-deprecated -- the tab still renders through display(); declarative definitions are 1.13+ only
-	tab.display();
+	// The tab still renders through display(); declarative definitions need Obsidian 1.13.
+	(tab as unknown as { display(): void }).display();
 	const named = (name: string) => {
 		const setting = Setting.created.find((s) => s.name === name);
 		if (!setting) {
