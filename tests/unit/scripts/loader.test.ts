@@ -249,7 +249,8 @@ describe("ScriptHost.reload when reloads overlap", () => {
 		const [a, b] = await Promise.all([first, second]);
 
 		expect(a).toBe(b);
-		expect(b.errors.map((e) => e.message)).toEqual(["late"]);
+		// The old version had worked, so the notice also says it stays in effect.
+		expect(b.errors.map((e) => e.message.split("\n")[0])).toEqual(["late"]);
 	});
 
 	it("collapses a burst of reloads into one more run, not one per call", async () => {
