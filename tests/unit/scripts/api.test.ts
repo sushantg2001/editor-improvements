@@ -192,6 +192,18 @@ describe("set", () => {
 		expect(setOption).toHaveBeenCalledWith("textwidth", 80);
 	});
 
+	it("throws what vim returns for an option it rejects", () => {
+		const { api } = setup({ setOption: () => new Error("Unknown option: nope") });
+
+		expect(() => api.set("nope", 1)).toThrow("Unknown option: nope");
+	});
+
+	it("does not mistake an ordinary return value for a failure", () => {
+		const { api } = setup({ setOption: () => "ok" });
+
+		expect(() => api.set("textwidth", 80)).not.toThrow();
+	});
+
 	it("explains itself when vim mode is off, rather than failing silently", () => {
 		const { api } = setup(null);
 		expect(() => api.set("textwidth", 80)).toThrow(/vim mode is not active/);
