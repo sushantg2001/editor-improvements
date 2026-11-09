@@ -99,7 +99,6 @@ export interface VimApi {
 	handleKey(cm: CodeMirrorShim, key: string, origin?: string): void;
 	setOption(name: string, value: unknown, cm?: CodeMirrorShim): void;
 	getOption(name: string, cm?: CodeMirrorShim): unknown;
-	enterInsertMode(cm: CodeMirrorShim, args?: unknown, vim?: unknown): void;
 	exitInsertMode(cm: CodeMirrorShim): void;
 	exitVisualMode(cm: CodeMirrorShim, moveHead?: boolean): void;
 }
