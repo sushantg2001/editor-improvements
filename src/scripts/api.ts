@@ -69,6 +69,12 @@ export interface ScriptApiDeps {
 	leader: string;
 	/** True when the id names an action some earlier source already defined. */
 	knowsAction: (id: string) => boolean;
+	/**
+	 * What kind of action that is. Without it a known id is taken to be a plain
+	 * action, which is wrong for a motion or an operator: bound as an action it
+	 * would not move the cursor or compose with `d`.
+	 */
+	kindOf?: (id: string) => VimActionDef["kind"] | undefined;
 }
 
 const ALL_CONTEXTS: BindingContext[] = ["normal", "visual", "insert", "operatorPending"];
@@ -116,7 +122,7 @@ export function createScriptApi(deps: ScriptApiDeps): {
 
 	/** An id this script defined, or one an earlier source already did. */
 	const actionKindOf = (id: string): VimActionDef["kind"] | undefined =>
-		defined.get(id) ?? (deps.knowsAction(id) ? "action" : undefined);
+		defined.get(id) ?? deps.kindOf?.(id) ?? (deps.knowsAction(id) ? "action" : undefined);
 
 	const addMap = (
 		keys: string,

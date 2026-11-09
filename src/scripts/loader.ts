@@ -5,7 +5,7 @@ import { createScriptApi } from "./api";
 import { TYPINGS, TYPINGS_FILENAME } from "./typings";
 import { validateContribution } from "../core/validate";
 import type { ActionRegistry, Contribution } from "../core/registry";
-import type { ActionSource, VimApi } from "../types";
+import type { ActionSource, VimActionKind, VimApi } from "../types";
 import type { ScriptApi } from "./api";
 
 /** `init.js` runs first; the rest follow in lexical order, like Neovim's plugin/. */
@@ -123,7 +123,7 @@ export class ScriptHost extends Component {
 
 		// Ids defined earlier in this same reload, so a later script can map to
 		// an action an earlier one declared even though nothing is applied yet.
-		const pending = new Set<string>();
+		const pending = new Map<string, VimActionKind>();
 
 		for (const file of files) {
 			const outcome = await this.runScript(file, pending);
@@ -134,7 +134,7 @@ export class ScriptHost extends Component {
 			loaded.push(file);
 			applied.push([sourceOf(file), outcome.contribution]);
 			for (const action of outcome.contribution.actions ?? []) {
-				pending.add(action.id);
+				pending.set(action.id, action.kind);
 			}
 		}
 
@@ -202,7 +202,7 @@ export class ScriptHost extends Component {
 
 	private async runScript(
 		file: string,
-		pending: Set<string>,
+		pending: Map<string, VimActionKind>,
 	): Promise<{ contribution: Contribution } | { error: ScriptError }> {
 		let code: string;
 		try {
@@ -217,6 +217,7 @@ export class ScriptHost extends Component {
 			getVim: this.options.getVim,
 			leader: this.options.getLeader(),
 			knowsAction: (id) => pending.has(id) || registry.has(id),
+			kindOf: (id) => pending.get(id) ?? registry.get(id)?.kind,
 		});
 
 		const guarded = sealAfterRun(api, file);
