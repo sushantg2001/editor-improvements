@@ -1,5 +1,5 @@
 import { EditorSelection } from "@codemirror/state";
-import type { TransactionSpec } from "@codemirror/state";
+import type { EditorState, TransactionSpec } from "@codemirror/state";
 import type { App } from "obsidian";
 
 import { clampToNormal, offsetToPos, placeSelection, posToOffset } from "../../core/vim-editing";
@@ -41,17 +41,31 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 	const { app, getVim, settings } = ctx;
 
 	/** Runs an edit, finishing the way vim would: out of visual mode, off the newline. */
-	const edit = (id: string, name: string, make: (env: edits.EditEnv) => Edit): VimActionDef => ({
+	const edit = (
+		id: string,
+		name: string,
+		make: (env: edits.EditEnv) => Edit,
+		options: { atCursor?: boolean } = {},
+	): VimActionDef => ({
 		id,
 		name,
 		group: GROUP.lines,
 		kind: "action",
 		isEdit: true,
-		run: (c) => apply(c, make({ continueLists: settings().autoInsertListPrefix })),
+		run: (c) =>
+			apply(c, make({ continueLists: settings().autoInsertListPrefix }), options.atCursor),
 	});
 
-	const apply = (c: VimContext, run: Edit): void => {
-		const spec = run(c.view.state);
+	/**
+	 * `atCursor` marks an edit that works from a position rather than a range.
+	 * From visual mode that position is vim's cursor, which is not where
+	 * CodeMirror's selection ends: a linewise selection ends at the line's end
+	 * whatever column the cursor is in, and a characterwise one ends a
+	 * character past it. Left alone, "delete to end of line" would find itself
+	 * already at the end and delete the newline instead.
+	 */
+	const apply = (c: VimContext, run: Edit, atCursor = false): void => {
+		const spec = run(atCursor && isVisual(c.cm) ? stateAtVimCursor(c) : c.view.state);
 		if (spec) {
 			commit(c, spec);
 		}
@@ -125,8 +139,12 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 		edit("insertLineAbove", "Insert line above", edits.insertLineAbove),
 		edit("insertLineBelow", "Insert line below", edits.insertLineBelow),
 		edit("deleteLine", "Delete line", () => edits.deleteLine),
-		edit("deleteToStartOfLine", "Delete to start of line", () => edits.deleteToStartOfLine),
-		edit("deleteToEndOfLine", "Delete to end of line", () => edits.deleteToEndOfLine),
+		edit("deleteToStartOfLine", "Delete to start of line", () => edits.deleteToStartOfLine, {
+			atCursor: true,
+		}),
+		edit("deleteToEndOfLine", "Delete to end of line", () => edits.deleteToEndOfLine, {
+			atCursor: true,
+		}),
 		edit("deleteWordBefore", "Delete word before cursor", () => edits.deleteWord("before")),
 		edit("deleteWordAfter", "Delete word after cursor", () => edits.deleteWord("after")),
 		edit("joinLines", "Join lines", () => edits.joinLines),
@@ -201,6 +219,17 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 	];
 
 	return { actions };
+}
+
+/** The editor state with the selection collapsed to where vim's cursor is. */
+function stateAtVimCursor(c: VimContext): EditorState {
+	const { state } = c.view;
+	const head = c.cm.state.vim?.sel?.head;
+	if (!head) {
+		return state;
+	}
+	const cursor = EditorSelection.cursor(posToOffset(state.doc, head));
+	return state.update({ selection: cursor }).state;
 }
 
 /** Normal mode cannot rest on the newline; bring a cursor that landed there back. */
