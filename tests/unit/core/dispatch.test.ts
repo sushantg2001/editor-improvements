@@ -147,7 +147,7 @@ describe("VimDispatcher result modes", () => {
 
 		dispatcher.invoke("a", cm);
 
-		expect(vim.handleKey).toHaveBeenCalledExactlyOnceWith(cm, "i", "user");
+		expect(vim.handleKey).toHaveBeenCalledExactlyOnceWith(cm, "i", "mapping");
 	});
 
 	it("enters insert mode after an async action resolves", async () => {
@@ -162,7 +162,7 @@ describe("VimDispatcher result modes", () => {
 		await Promise.resolve();
 		await Promise.resolve();
 
-		expect(vim.handleKey).toHaveBeenCalledExactlyOnceWith(cm, "i", "user");
+		expect(vim.handleKey).toHaveBeenCalledExactlyOnceWith(cm, "i", "mapping");
 	});
 
 	it("does not re-enter insert mode when already there", () => {
