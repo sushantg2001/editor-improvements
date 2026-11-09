@@ -16,7 +16,9 @@
 	color: var(--color-green);
 }
 
-.vim-tools-mode.vt-mode-visual {
+.vim-tools-mode.vt-mode-visual,
+.vim-tools-mode.vt-mode-visual-line,
+.vim-tools-mode.vt-mode-visual-block {
 	color: var(--color-yellow);
 }
 
