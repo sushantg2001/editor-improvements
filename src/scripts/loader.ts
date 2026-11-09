@@ -50,6 +50,8 @@ export class ScriptHost extends Component {
 	private lastResult: ScriptLoadResult = { loaded: [], errors: [] };
 	private appliedSources: ActionSource[] = [];
 	private reloadTimer: number | null = null;
+	private running: Promise<ScriptLoadResult> | null = null;
+	private rerun = false;
 
 	constructor(private readonly options: ScriptHostOptions) {
 		super();
@@ -76,8 +78,38 @@ export class ScriptHost extends Component {
 		return this.options.app.vault.adapter;
 	}
 
-	/** Runs every script and replaces the previous configuration with the result. */
-	async reload(): Promise<ScriptLoadResult> {
+	/**
+	 * Runs every script and replaces the previous configuration with the result.
+	 *
+	 * Reading and running scripts is asynchronous, so two reloads can overlap: a
+	 * save during a slow read, or a settings change landing with a file
+	 * change. If both ran at once the one that finished last would win, which
+	 * can be the one that read the older file. So only one runs at a time, and
+	 * a call made while one is running asks for exactly one more run after it
+	 * - however many calls pile up - and every caller gets that final result.
+	 */
+	reload(): Promise<ScriptLoadResult> {
+		if (this.running) {
+			this.rerun = true;
+			return this.running;
+		}
+		const run = (async () => {
+			try {
+				let result: ScriptLoadResult;
+				do {
+					this.rerun = false;
+					result = await this.runReload();
+				} while (this.rerun);
+				return result;
+			} finally {
+				this.running = null;
+			}
+		})();
+		this.running = run;
+		return run;
+	}
+
+	private async runReload(): Promise<ScriptLoadResult> {
 		const files = this.options.isEnabled() ? await this.listScripts() : [];
 		const loaded: string[] = [];
 		const errors: ScriptError[] = [];
@@ -184,7 +216,8 @@ export class ScriptHost extends Component {
 	/** Re-runs everything when any file in the scripts folder changes. */
 	private watchFolder(): void {
 		const maybeReload = (path: string): void => {
-			if (!path.startsWith(this.folder) || !path.endsWith(".js")) {
+			// With the separator, so a sibling folder such as `vim-tools-old` is not ours.
+			if (!path.startsWith(`${this.folder}/`) || !path.endsWith(".js")) {
 				return;
 			}
 			// Editors often write in bursts; collapse them into one reload.
