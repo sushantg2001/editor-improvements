@@ -110,6 +110,56 @@ function withOperatorPending(bindings: ResolvedBinding[]): ResolvedBinding[] {
 }
 
 /**
+ * Which built-in bindings have been removed from the Vim API this session.
+ *
+ * `Vim.unmap` removes the first entry that matches, and after the built-in one
+ * is gone that would be somebody else's. So each is removed once. The record
+ * has to live as long as the removal does, which is as long as the Vim API
+ * does: until Obsidian restarts. A ledger would not do, nor anything in this
+ * file's own scope, because turning the plugin off and on creates both anew
+ * while the keymap carries on without the built-in. It hangs off the Vim
+ * object itself, under a key shared by every copy of the plugin.
+ *
+ * Unlike our own bindings, a removed built-in cannot be handed back: vim
+ * exposes no way to restore it.
+ */
+const RELEASED = Symbol.for("vim-tools.released-built-ins");
+
+interface Released {
+	/** `mode:keys` of each removal asked for. */
+	slots: Set<string>;
+	/** Keys whose mode-less built-in has been removed. */
+	everywhere: Set<string>;
+}
+
+/**
+ * Keys that no key press can ever match: they start with a control character.
+ */
+const PLACEHOLDER_KEYS = "\u0001vim-tools-removed-built-in";
+
+/**
+ * Makes up for a removed built-in, which would otherwise break every plain
+ * remap.
+ *
+ * A non-recursive mapping (`nnoremap` and its kin) is resolved against the
+ * built-in keys only, which the addon finds by counting back from the end of
+ * its keymap by the number of built-ins it started with. Take one out and the
+ * count is one too long: it begins a place too early, among our own mappings,
+ * and with more removals than mappings it begins before the start of the list
+ * and every use of a plain remap fails with a TypeError. A mapping that cannot
+ * match anything takes the removed one's place, so the count comes out right
+ * and the search starts where the built-ins do.
+ */
+function keepBuiltInBoundary(vim: VimApi): void {
+	vim.mapCommand(PLACEHOLDER_KEYS, "action", "vimToolsRemovedBuiltIn", {}, { context: "normal" });
+}
+
+function releasedBy(vim: VimApi): Released {
+	const holder = vim as unknown as Record<symbol, Released | undefined>;
+	return (holder[RELEASED] ??= { slots: new Set(), everywhere: new Set() });
+}
+
+/**
  * Tracks every key we hand to CodeMirror's vim so we can hand it back.
  *
  * `mapCommand` has no removal API, but `Vim.unmap(keys, context)` splices the
@@ -120,18 +170,6 @@ function withOperatorPending(bindings: ResolvedBinding[]): ResolvedBinding[] {
  */
 export class MappingLedger {
 	private applied: { keys: string; context: BindingContext }[] = [];
-	/**
-	 * Built-in bindings already removed this session.
-	 *
-	 * `Vim.unmap` removes the first entry that matches, and after the built-in
-	 * one is gone that would be somebody else's. So each is removed once. Unlike
-	 * our own bindings, a removed built-in cannot be handed back: vim exposes no
-	 * way to restore it, so it stays gone until Obsidian restarts.
-	 */
-	private readonly released = new Set<string>();
-	/** Keys whose context-less built-in has been removed, so it is not looked for twice. */
-	private readonly releasedEverywhere = new Set<string>();
-
 	/**
 	 * Replaces every binding we own with `bindings`, after clearing the built-in
 	 * bindings in `unmaps` out of the way.
@@ -157,22 +195,27 @@ export class MappingLedger {
 	}
 
 	private release(vim: VimApi, unmaps: UnmapSpec[]): void {
+		const released = releasedBy(vim);
 		for (const { keys, contexts } of unmaps) {
 			for (const context of contexts ?? [undefined]) {
 				const slot = `${context ?? "all"}:${keys}`;
-				if (this.released.has(slot)) {
+				if (released.slots.has(slot)) {
 					continue;
 				}
-				this.released.add(slot);
+				released.slots.add(slot);
 				// Vim matches the context exactly. `S` has one entry per mode, but
 				// a key such as <Space> has a single entry with no context at all,
 				// which asking for "normal" never finds. Fall back to that entry,
 				// once: it covers every mode, so it is gone for all of them.
-				const removed = vim.unmap(keys, context);
-				if (!removed && context !== undefined && !this.releasedEverywhere.has(keys)) {
-					if (vim.unmap(keys, undefined)) {
-						this.releasedEverywhere.add(keys);
+				let removed = vim.unmap(keys, context);
+				if (!removed && context !== undefined && !released.everywhere.has(keys)) {
+					removed = vim.unmap(keys, undefined);
+					if (removed) {
+						released.everywhere.add(keys);
 					}
+				}
+				if (removed) {
+					keepBuiltInBoundary(vim);
 				}
 			}
 		}
