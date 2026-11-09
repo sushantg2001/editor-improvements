@@ -126,6 +126,51 @@ describe("EditorImprovementsPlugin", () => {
 		expect(t.text()).toBe("hello");
 	});
 
+	describe("when vim mode is switched off", () => {
+		async function withMapping() {
+			const t = await start("hello");
+			t.plugin.settings.scriptsEnabled = true;
+			await t.app.vault.adapter.mkdir(".obsidian/editor-improvements");
+			await t.app.vault.adapter.write(".obsidian/editor-improvements/init.js", `vim.nnoremap("gz", "x");`);
+			await t.plugin.reloadScripts();
+			return t;
+		}
+
+		it("hands its keys back straight away, with nothing left in the keymap", async () => {
+			const t = await withMapping();
+
+			t.app.vimEnabled = false;
+			t.plugin.bridge.refresh();
+			press(t.cm, "g", "z");
+
+			expect(t.text()).toBe("hello");
+		});
+
+		it("takes them up again when vim mode comes back", async () => {
+			const t = await withMapping();
+			t.app.vimEnabled = false;
+			t.plugin.bridge.refresh();
+
+			t.app.vimEnabled = true;
+			t.plugin.bridge.refresh();
+			press(t.cm, "g", "z");
+
+			expect(t.text()).toBe("ello");
+		});
+
+		it("leaves nothing behind if the plugin is then turned off", async () => {
+			const t = await withMapping();
+			t.app.vimEnabled = false;
+			t.plugin.bridge.refresh();
+
+			t.plugin.unload();
+			t.app.vimEnabled = true;
+			press(t.cm, "g", "z");
+
+			expect(t.text()).toBe("hello");
+		});
+	});
+
 	it("reports status", async () => {
 		const t = await start();
 
