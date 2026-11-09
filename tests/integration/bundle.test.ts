@@ -1,6 +1,7 @@
 import * as codemirrorState from "@codemirror/state";
 import { build } from "esbuild";
 import { readFileSync } from "node:fs";
+import { runInThisContext } from "node:vm";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import * as obsidianDouble from "../mocks/obsidian";
@@ -60,7 +61,12 @@ function loadBundle(): { default: PluginClass } {
 		}
 		return modules[name];
 	};
-	new Function("module", "exports", "require", code)(module, module.exports, requireModule);
+	const wrapper = runInThisContext(`(function (module, exports, require) {${code}\n})`) as (
+		module: unknown,
+		exports: unknown,
+		require: (name: string) => unknown,
+	) => void;
+	wrapper(module, module.exports, requireModule);
 	loadBundle.required = required;
 	return module.exports;
 }
