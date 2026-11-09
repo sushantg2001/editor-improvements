@@ -23,13 +23,46 @@ export function resolveScriptsFolder(app: App, settings: EditorImprovementsSetti
 	return normalizePath(`${app.vault.configDir}/${SCRIPTS_FOLDER_NAME}`);
 }
 
+/**
+ * Builds settings from whatever `data.json` held.
+ *
+ * The file is user-editable and synced between devices, so a value can be the
+ * wrong type or missing. Each field is accepted only if it has the right type
+ * and otherwise falls back to its default, so a damaged file degrades to
+ * defaults for that field instead of breaking startup.
+ */
 export function mergeSettings(data: unknown): EditorImprovementsSettings {
-	const stored = (data ?? {}) as Partial<EditorImprovementsSettings>;
+	const stored = isRecord(data) ? data : {};
+	const defaults = DEFAULT_SETTINGS;
+	const prompts = isRecord(stored.modePrompts) ? stored.modePrompts : {};
+
+	const modePrompts = { ...defaults.modePrompts };
+	for (const mode of VIM_MODES) {
+		const value = prompts[mode];
+		if (typeof value === "string" && value.length > 0) {
+			modePrompts[mode] = value;
+		}
+	}
+
 	return {
-		...DEFAULT_SETTINGS,
-		...stored,
-		modePrompts: { ...DEFAULT_SETTINGS.modePrompts, ...stored.modePrompts },
+		showModeInStatusBar: booleanOr(stored.showModeInStatusBar, defaults.showModeInStatusBar),
+		scriptsEnabled: booleanOr(stored.scriptsEnabled, defaults.scriptsEnabled),
+		scriptsFolder: stringOr(stored.scriptsFolder, defaults.scriptsFolder),
+		leader: stringOr(stored.leader, defaults.leader, true),
+		modePrompts,
 	};
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function booleanOr(value: unknown, fallback: boolean): boolean {
+	return typeof value === "boolean" ? value : fallback;
+}
+
+function stringOr(value: unknown, fallback: string, nonEmpty = false): string {
+	return typeof value === "string" && (!nonEmpty || value.length > 0) ? value : fallback;
 }
 
 export class EditorImprovementsSettingTab extends PluginSettingTab {

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { CmListeners } from "../../src/core/cm-listeners";
-import type { CodeMirrorShim } from "../../src/types";
+import { CmListeners } from "../../../src/core/cm-listeners";
+import type { CodeMirrorShim } from "../../../src/types";
 
 function fakeCm(connected = true) {
 	const field = document.createElement("div");

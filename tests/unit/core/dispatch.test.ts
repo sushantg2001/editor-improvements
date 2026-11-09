@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { VimDispatcher } from "../../src/core/dispatch";
-import { ActionRegistry } from "../../src/core/registry";
-import { App, Notice } from "../mocks/obsidian";
-import type { CodeMirrorShim, VimActionDef, VimApi, VimContext } from "../../src/types";
+import { VimDispatcher } from "../../../src/core/dispatch";
+import { ActionRegistry } from "../../../src/core/registry";
+import { App, Notice } from "../../mocks/obsidian";
+import type { CodeMirrorShim, VimActionDef, VimApi, VimContext } from "../../../src/types";
 
 function fakeCm(mode = "normal"): CodeMirrorShim {
 	return {

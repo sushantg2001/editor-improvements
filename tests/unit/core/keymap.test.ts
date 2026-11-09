@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { VimDispatcher } from "../../src/core/dispatch";
-import { MappingLedger, resolveBindings } from "../../src/core/keymap";
-import { ActionRegistry } from "../../src/core/registry";
-import type { BindingContext, VimActionDef, VimApi } from "../../src/types";
+import { VimDispatcher } from "../../../src/core/dispatch";
+import { MappingLedger, resolveBindings } from "../../../src/core/keymap";
+import { ActionRegistry } from "../../../src/core/registry";
+import type { BindingContext, VimActionDef, VimApi } from "../../../src/types";
 
 interface KeymapEntry {
 	keys: string;

@@ -1,16 +1,10 @@
 import { Notice } from "obsidian";
-import type { App } from "obsidian";
 
+import type { FeatureModule, ModuleContext } from "../core/modules";
 import type { Contribution } from "../core/registry";
-import type { VimApi } from "../types";
-
-export interface BuiltinDeps {
-	app: App;
-	getVim: () => VimApi | null;
-}
 
 /**
- * Actions that fill holes in what Obsidian exposes as commands.
+ * Context-menu items that Obsidian offers but never registered as commands.
  *
  * `Select all`, `Copy path` and `Paste as plain text` exist in Obsidian's
  * right-click menus but have no command behind them, so as the app ships there
@@ -20,7 +14,7 @@ export interface BuiltinDeps {
  * Clipboard copy/cut/paste are deliberately absent: `editor:copy`,
  * `editor:cut` and `editor:paste` already exist and are already bindable.
  */
-export function builtinContribution({ app, getVim }: BuiltinDeps): Contribution {
+export function contextMenuContribution({ app, getVim }: ModuleContext): Contribution {
 	return {
 		actions: [
 			{
@@ -73,3 +67,9 @@ export function builtinContribution({ app, getVim }: BuiltinDeps): Contribution 
 		],
 	};
 }
+
+export const contextMenuModule: FeatureModule = {
+	id: "context-menu",
+	title: "Context-menu items as commands",
+	create: (ctx) => ({ contribution: contextMenuContribution(ctx) }),
+};

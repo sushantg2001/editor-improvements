@@ -12,6 +12,23 @@ Thanks for helping with editor-improvements. The full process is in [docs/sdlc.m
 
 Urgent fixes follow the same path as any `fix/<slug>` branch. There is no separate hotfix branch.
 
+## Adding a feature
+
+A feature is a module: one file in `src/modules/` that exports a `FeatureModule`, plus one line in `src/modules/index.ts`. `main.ts` does not change.
+
+```ts
+export const myModule: FeatureModule = {
+	id: "my-module", // kebab-case, becomes the registry source `module:my-module`
+	title: "What it does in one line",
+	create: (ctx) => ({ contribution: { actions: [/* ... */] } }),
+};
+```
+
+- Action ids are camelCase and unique across all modules. Groups are capitalised labels.
+- `create` must not touch the editor or the Vim API; actions do that when they run.
+- Tests mirror `src/`: `tests/unit/modules/<id>.test.ts` for logic, `tests/integration/modules/<id>.test.ts` for behaviour against the real CodeMirror vim. `tests/unit/modules/contract.test.ts` checks every listed module automatically.
+- Shared test helpers live in `tests/helpers/`.
+
 ## Collaboration
 
 Right now collaboration means opening pull requests: fork the repo, or push a `<type>/<slug>` branch if you were invited, then open a PR. You do not need to sign commits. Only the maintainer merges and tags. `claude/*` branches are local-only and GitHub rejects them.

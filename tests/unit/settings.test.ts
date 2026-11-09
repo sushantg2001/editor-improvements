@@ -63,3 +63,37 @@ describe("resolveScriptsFolder", () => {
 		expect(resolveScriptsFolder(app as never, settings)).toBe(".obsidian/editor-improvements");
 	});
 });
+
+describe("mergeSettings against a damaged data.json", () => {
+	it("ignores values of the wrong type instead of passing them on", () => {
+		const merged = mergeSettings({
+			showModeInStatusBar: "yes",
+			scriptsEnabled: 1,
+			scriptsFolder: 5,
+			leader: null,
+		});
+
+		expect(merged).toEqual(DEFAULT_SETTINGS);
+	});
+
+	it("ignores an empty leader or mode label, which would map nothing", () => {
+		const merged = mergeSettings({ leader: "", modePrompts: { normal: "" } });
+
+		expect(merged.leader).toBe(DEFAULT_SETTINGS.leader);
+		expect(merged.modePrompts.normal).toBe(DEFAULT_SETTINGS.modePrompts.normal);
+	});
+
+	it("survives a non-object file and a non-object modePrompts", () => {
+		expect(mergeSettings("garbage")).toEqual(DEFAULT_SETTINGS);
+		expect(mergeSettings([1, 2])).toEqual(DEFAULT_SETTINGS);
+		expect(mergeSettings({ modePrompts: "NORMAL" }).modePrompts).toEqual(
+			DEFAULT_SETTINGS.modePrompts,
+		);
+	});
+
+	it("drops keys it does not know, so a stale field cannot linger", () => {
+		const merged = mergeSettings({ removedInV2: true });
+
+		expect(merged).not.toHaveProperty("removedInV2");
+	});
+});

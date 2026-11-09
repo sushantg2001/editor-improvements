@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createScriptApi, expandLeader } from "../../src/scripts/api";
-import { ActionRegistry } from "../../src/core/registry";
-import { App, Notice } from "../mocks/obsidian";
-import type { VimApi } from "../../src/types";
+import { createScriptApi, expandLeader } from "../../../src/scripts/api";
+import { ActionRegistry } from "../../../src/core/registry";
+import { App, Notice } from "../../mocks/obsidian";
+import type { VimApi } from "../../../src/types";
 
 function setup(vim: Partial<VimApi> | null = {}, known: string[] = []) {
 	const registry = new ActionRegistry();

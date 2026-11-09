@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 
 // Imported directly rather than through `obsidian` so that `tsc` sees the mock's
 // test helpers too, not just the real (much narrower) Obsidian typings.
-import { App } from "../mocks/obsidian";
-import { VimBridge, isVimEnabled, readVimApi } from "../../src/core/vim-bridge";
-import type { VimApi } from "../../src/types";
+import { App } from "../../mocks/obsidian";
+import { VimBridge, isVimEnabled, readVimApi } from "../../../src/core/vim-bridge";
+import type { VimApi } from "../../../src/types";
 
 function installFakeVim(): VimApi {
 	const vim = { map: () => {} } as unknown as VimApi;
