@@ -126,6 +126,73 @@ describe("EditorImprovementsPlugin", () => {
 		expect(t.text()).toBe("hello");
 	});
 
+	describe("settings that change what scripts do", () => {
+		async function withScript(code: string) {
+			const t = await start("hello");
+			await t.app.vault.adapter.mkdir(".obsidian/editor-improvements");
+			await t.app.vault.adapter.write(".obsidian/editor-improvements/init.js", code);
+			return t;
+		}
+
+		it("turning scripts on applies them, and off takes them away again", async () => {
+			const t = await withScript(`vim.nnoremap("gz", "x");`);
+			press(t.cm, "g", "z");
+			expect(t.text()).toBe("hello");
+
+			t.plugin.settings.scriptsEnabled = true;
+			await t.plugin.reloadScripts();
+			press(t.cm, "g", "z");
+			expect(t.text()).toBe("ello");
+
+			t.plugin.settings.scriptsEnabled = false;
+			await t.plugin.reloadScripts();
+			press(t.cm, "g", "z");
+			expect(t.text()).toBe("ello");
+		});
+
+		it("a changed leader key reaches the mappings that use it", async () => {
+			const t = await withScript(`vim.nnoremap("<leader>z", "x");`);
+			t.plugin.settings.scriptsEnabled = true;
+			t.plugin.settings.leader = "§";
+			await t.plugin.reloadScripts();
+
+			press(t.cm, "§", "z");
+			expect(t.text()).toBe("ello");
+
+			t.plugin.settings.leader = "¤";
+			await t.plugin.reloadScripts();
+			// The old leader is no longer a key of ours; the stray z that follows it
+			// starts one of vim's own z commands, so cancel it.
+			press(t.cm, "§", "z", "<Esc>");
+			expect(t.text()).toBe("ello");
+			press(t.cm, "¤", "z");
+			expect(t.text()).toBe("llo");
+		});
+
+		it("a script's own leader beats the setting, for that script only", async () => {
+			const t = await withScript(`vim.leader("§"); vim.nnoremap("<leader>z", "x");`);
+			t.plugin.settings.scriptsEnabled = true;
+			t.plugin.settings.leader = "¤";
+
+			await t.plugin.reloadScripts();
+			press(t.cm, "§", "z");
+
+			expect(t.text()).toBe("ello");
+		});
+
+		it("reports a broken script by file and line without disturbing the others", async () => {
+			const t = await withScript(`vim.nnoremap("gz", "x");`);
+			await t.app.vault.adapter.write(".obsidian/editor-improvements/zz-broken.js", `\n\nthrow new Error("nope");`);
+			t.plugin.settings.scriptsEnabled = true;
+
+			await t.plugin.reloadScripts();
+			press(t.cm, "g", "z");
+
+			expect(t.text()).toBe("ello");
+			expect(Notice.messages.some((m) => m.includes("zz-broken.js:3") && m.includes("nope"))).toBe(true);
+		});
+	});
+
 	describe("when vim mode is switched off", () => {
 		async function withMapping() {
 			const t = await start("hello");
