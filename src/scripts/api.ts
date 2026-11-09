@@ -33,7 +33,11 @@ export interface ScriptApi {
 	motion(id: string, run: ScriptRun, options?: DefineOptions): void;
 	operator(id: string, run: ScriptRun, options?: DefineOptions): void;
 
-	/** Recursive maps, as in vim's `nmap` family. */
+	/**
+	 * Recursive maps, as in vim's `nmap` family. With no `contexts`, `map` covers
+	 * normal, visual and operator-pending mode, like `:map`; use `imap` or pass
+	 * `"insert"` for insert mode.
+	 */
 	map(keys: string, rhs: string, contexts?: BindingContext[]): void;
 	nmap(keys: string, rhs: string): void;
 	vmap(keys: string, rhs: string): void;
@@ -71,7 +75,12 @@ export interface ScriptApiDeps {
 	knowsAction: (id: string) => boolean;
 }
 
-const ALL_CONTEXTS: BindingContext[] = ["normal", "visual", "insert", "operatorPending"];
+/**
+ * What a mapping with no mode covers, as in vim: `:map` is normal, visual and
+ * operator-pending mode, and insert mode is `:map!`. Including insert mode
+ * would let `vim.noremap("H", "^")` take over typing a capital H.
+ */
+const DEFAULT_CONTEXTS: BindingContext[] = ["normal", "visual", "operatorPending"];
 
 /**
  * Builds the `vim` object for one script, collecting everything it declares
@@ -145,13 +154,13 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		motion: (id, run, options) => define("motion", id, run, options),
 		operator: (id, run, options) => define("operator", id, run, options),
 
-		map: (keys, rhs, contexts = ALL_CONTEXTS) => addMap(keys, rhs, contexts, true),
+		map: (keys, rhs, contexts = DEFAULT_CONTEXTS) => addMap(keys, rhs, contexts, true),
 		nmap: (keys, rhs) => addMap(keys, rhs, ["normal"], true),
 		vmap: (keys, rhs) => addMap(keys, rhs, ["visual"], true),
 		imap: (keys, rhs) => addMap(keys, rhs, ["insert"], true),
 		omap: (keys, rhs) => addMap(keys, rhs, ["operatorPending"], true),
 
-		noremap: (keys, rhs, contexts = ALL_CONTEXTS) => addMap(keys, rhs, contexts, false),
+		noremap: (keys, rhs, contexts = DEFAULT_CONTEXTS) => addMap(keys, rhs, contexts, false),
 		nnoremap: (keys, rhs) => addMap(keys, rhs, ["normal"], false),
 		vnoremap: (keys, rhs) => addMap(keys, rhs, ["visual"], false),
 		inoremap: (keys, rhs) => addMap(keys, rhs, ["insert"], false),
