@@ -25,6 +25,9 @@ export interface VimState {
 	/** True in `<C-v>` (blockwise) visual mode. */
 	visualBlock?: boolean;
 	sel?: { anchor: EditorPosition; head: EditorPosition } | null;
+	/** What the dot command repeats: the last edit's input and, for an action, its command. */
+	lastEditInputState?: unknown;
+	lastEditActionCommand?: unknown;
 }
 
 /** The CodeMirror 5 compatibility shim that Obsidian hands to the Vim addon. */
