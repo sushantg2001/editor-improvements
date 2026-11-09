@@ -49,3 +49,6 @@ export function press(cm: CodeMirrorShim, ...keys: string[]): void {
 export function modeOf(cm: CodeMirrorShim): string {
 	return cm.state.vim?.mode ?? "normal";
 }
+
+/** The plugin's own view of the vim mode, so tests read it the way production does. */
+export { getVimMode } from "../../src/core/editor";

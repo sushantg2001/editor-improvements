@@ -82,6 +82,16 @@ describe("defining actions", () => {
 		});
 	});
 
+	it("passes isEdit through, so a script action can be repeated with a dot", () => {
+		const { api, actions } = setup();
+
+		api.action("trim", () => {}, { isEdit: true });
+		api.action("peek", () => {});
+
+		expect(actions[0]?.isEdit).toBe(true);
+		expect(actions[1]?.isEdit).toBeUndefined();
+	});
+
 	it("rejects an empty id rather than registering something unreachable", () => {
 		const { api } = setup();
 		expect(() => api.action("", () => {})).toThrow(/id/);

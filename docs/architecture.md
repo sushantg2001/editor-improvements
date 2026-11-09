@@ -42,3 +42,6 @@ in the registry on every call. Bodies are hot-swappable while the stub stays put
 
 **Motions and operators.** A motion bound only to `normal` is invisible to `d`/`y`/`c`, because CodeMirror rewrites
 the context to `operatorPending` while an operator waits. The keymap mirrors motion bindings into that context.
+
+**Dot repeat.** Vim's `.` repeats only commands registered as edits. An action sets `isEdit` when it changes the
+document, and the keymap passes that on, so `.` repeats it. Motions and selections leave it off.

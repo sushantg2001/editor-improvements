@@ -144,7 +144,12 @@ export class MarkdownView {
 
 export class Workspace extends Events {
 	activeView: MarkdownView | null = null;
+	activeFile: unknown = null;
 	layoutReadyCallbacks: (() => void)[] = [];
+
+	getActiveFile(): unknown {
+		return this.activeFile;
+	}
 
 	getActiveViewOfType(): MarkdownView | null {
 		return this.activeView;
@@ -162,8 +167,29 @@ export class Workspace extends Events {
 	}
 }
 
+export class MetadataCache {
+	/** Test helper: heading line numbers per file object. */
+	headings = new Map<unknown, number[]>();
+
+	getFileCache(file: unknown): { headings?: { position: { start: { line: number } } }[] } | null {
+		const lines = this.headings.get(file);
+		return lines
+			? { headings: lines.map((line) => ({ position: { start: { line } } })) }
+			: null;
+	}
+}
+
 export class Vault extends Events {
 	adapter = new DataAdapter();
+	config = new Map<string, unknown>();
+
+	getConfig(key: string): unknown {
+		return this.config.get(key);
+	}
+
+	setConfig(key: string, value: unknown): void {
+		this.config.set(key, value);
+	}
 	/** Obsidian lets users rename this; it is not always `.obsidian`. */
 	configDir = ".obsidian";
 }
@@ -171,6 +197,7 @@ export class Vault extends Events {
 export class App {
 	workspace = new Workspace();
 	vault = new Vault();
+	metadataCache = new MetadataCache();
 	vimEnabled = false;
 
 	isVimEnabled(): boolean {
@@ -319,4 +346,25 @@ export class Setting {
 		callback(new BaseComponent());
 		return this;
 	}
+}
+
+export abstract class SuggestModal<T> {
+	limit = 100;
+	placeholder = "";
+	emptyStateText = "";
+	opened = false;
+
+	constructor(public app: App) {}
+
+	setPlaceholder(text: string): void {
+		this.placeholder = text;
+	}
+
+	open(): void {
+		this.opened = true;
+	}
+
+	abstract getSuggestions(query: string): T[];
+	abstract renderSuggestion(value: T, el: HTMLElement): void;
+	abstract onChooseSuggestion(value: T): void;
 }

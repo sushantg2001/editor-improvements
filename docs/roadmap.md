@@ -5,7 +5,7 @@
 | 0 | Scaffold, vim bridge, mode tracking | ✅ |
 | 1 | Registry, command surface, mapping ledger, selection service | ✅ |
 | 2 | Scripts engine and public API | ✅ |
-| 3 | Editor Shortcuts port, made vim-aware | |
+| 3 | Editor Shortcuts port, made vim-aware | ✅ |
 | 4 | vimrc → `init.js` converter | |
 | 5 | Context menu catalogue | |
 | 6 | Structure service, text objects, structural motions | |
