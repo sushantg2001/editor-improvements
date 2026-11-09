@@ -1,4 +1,4 @@
-import { EditorSelection } from "@codemirror/state";
+import { ChangeSet, EditorSelection } from "@codemirror/state";
 import type { EditorState, TransactionSpec } from "@codemirror/state";
 import type { App } from "obsidian";
 
@@ -41,19 +41,26 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 	const { app, getVim, settings } = ctx;
 
 	/** Runs an edit, finishing the way vim would: out of visual mode, off the newline. */
+	interface EditOptions {
+		/** Works from a position, not a range; see `apply`. */
+		atCursor?: boolean;
+		/** How many times a count of n runs the edit; omitted for an edit a count means nothing to. */
+		times?: (count: number, state: EditorState) => number;
+	}
+
 	const edit = (
 		id: string,
 		name: string,
 		make: (env: edits.EditEnv) => Edit,
-		options: { atCursor?: boolean } = {},
+		options: EditOptions = {},
 	): VimActionDef => ({
 		id,
 		name,
 		group: GROUP.lines,
 		kind: "action",
 		isEdit: true,
-		run: (c) =>
-			apply(c, make({ continueLists: settings().autoInsertListPrefix }), options.atCursor),
+		run: (c, args) =>
+			apply(c, make({ continueLists: settings().autoInsertListPrefix }), options, args.repeat),
 	});
 
 	/**
@@ -63,11 +70,37 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 	 * whatever column the cursor is in, and a characterwise one ends a
 	 * character past it. Left alone, "delete to end of line" would find itself
 	 * already at the end and delete the newline instead.
+	 *
+	 * A count runs the edit that many times, each on the result of the last, as
+	 * `3dd` or `3o` does, and the lot goes in as one change so it is one undo.
+	 * Visual mode ignores the count, as vim does.
 	 */
-	const apply = (c: VimContext, run: Edit, atCursor = false): void => {
-		const spec = run(atCursor && isVisual(c.cm) ? stateAtVimCursor(c) : c.view.state);
-		if (spec) {
-			commit(c, spec);
+	const apply = (c: VimContext, run: Edit, options: EditOptions, count: number): void => {
+		let state = options.atCursor && isVisual(c.cm) ? stateAtVimCursor(c) : c.view.state;
+		const times = isVisual(c.cm) || !options.times ? 1 : Math.max(1, options.times(count, state));
+
+		if (times === 1) {
+			const spec = run(state);
+			if (spec) {
+				commit(c, spec);
+			}
+			return;
+		}
+
+		let changes = ChangeSet.empty(state.doc.length);
+		let done = false;
+		for (let i = 0; i < times; i++) {
+			const next = run(state);
+			if (!next) {
+				break;
+			}
+			const transaction = state.update(next);
+			changes = changes.compose(transaction.changes);
+			state = transaction.state;
+			done = true;
+		}
+		if (done) {
+			commit(c, { changes, selection: state.selection });
 		}
 	};
 
@@ -136,21 +169,26 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 
 	const actions: VimActionDef[] = [
 		/* ----------------------------------------------------------- lines */
-		edit("insertLineAbove", "Insert line above", edits.insertLineAbove),
-		edit("insertLineBelow", "Insert line below", edits.insertLineBelow),
-		edit("deleteLine", "Delete line", () => edits.deleteLine),
+		edit("insertLineAbove", "Insert line above", edits.insertLineAbove, { times: same }),
+		edit("insertLineBelow", "Insert line below", edits.insertLineBelow, { times: same }),
+		edit("deleteLine", "Delete line", () => edits.deleteLine, { times: linesLeft }),
 		edit("deleteToStartOfLine", "Delete to start of line", () => edits.deleteToStartOfLine, {
 			atCursor: true,
 		}),
 		edit("deleteToEndOfLine", "Delete to end of line", () => edits.deleteToEndOfLine, {
 			atCursor: true,
 		}),
-		edit("deleteWordBefore", "Delete word before cursor", () => edits.deleteWord("before")),
-		edit("deleteWordAfter", "Delete word after cursor", () => edits.deleteWord("after")),
-		edit("joinLines", "Join lines", () => edits.joinLines),
-		edit("duplicateLine", "Duplicate line", () => edits.copyLines("down")),
-		edit("copyLineUp", "Copy line up", () => edits.copyLines("up")),
-		edit("copyLineDown", "Copy line down", () => edits.copyLines("down")),
+		edit("deleteWordBefore", "Delete word before cursor", () => edits.deleteWord("before"), {
+			times: same,
+		}),
+		edit("deleteWordAfter", "Delete word after cursor", () => edits.deleteWord("after"), {
+			times: same,
+		}),
+		// 3J joins three lines, which is two joins.
+		edit("joinLines", "Join lines", () => edits.joinLines, { times: (n) => Math.max(1, n - 1) }),
+		edit("duplicateLine", "Duplicate line", () => edits.copyLines("down"), { times: same }),
+		edit("copyLineUp", "Copy line up", () => edits.copyLines("up"), { times: same }),
+		edit("copyLineDown", "Copy line down", () => edits.copyLines("down"), { times: same }),
 
 		/* ---------------------------------------------------------- cursor */
 		motion("goToLineStart", "Go to start of line", moves.lineStart),
@@ -220,6 +258,12 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 
 	return { actions };
 }
+
+const same = (count: number): number => count;
+
+/** A count of lines to delete cannot go past the end of the document, as `5dd` on the last two lines. */
+const linesLeft = (count: number, state: EditorState): number =>
+	Math.min(count, state.doc.lines - state.doc.lineAt(state.selection.main.head).number + 1);
 
 /** The editor state with the selection collapsed to where vim's cursor is. */
 function stateAtVimCursor(c: VimContext): EditorState {
