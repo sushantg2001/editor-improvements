@@ -178,7 +178,12 @@ export function createScriptApi(deps: ScriptApiDeps): {
 			if (!vim) {
 				throw new Error(`Cannot set "${option}": vim mode is not active`);
 			}
-			vim.setOption(option, value);
+			// An unknown option, or a value of the wrong type, comes back as an
+			// Error instead of being thrown, so a typo would be a silent no-op.
+			const outcome = vim.setOption(option, value);
+			if (outcome instanceof Error) {
+				throw outcome;
+			}
 		},
 
 		obcommand: (id) => {
