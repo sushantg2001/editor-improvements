@@ -53,6 +53,13 @@ export function validateContribution(contribution: Contribution): string[] {
 		}
 	}
 
+	for (const unmap of contribution.unmaps ?? []) {
+		const problem = describeKeysProblem(unmap.keys);
+		if (problem) {
+			problems.push(`unmap "${unmap.keys}": ${problem}`);
+		}
+	}
+
 	return problems;
 }
 

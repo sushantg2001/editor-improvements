@@ -55,7 +55,7 @@ export class VimToolsRuntime extends Component {
 			return;
 		}
 		const { bindings, conflicts } = resolveBindings(this.options.registry);
-		this.ledger.apply(vim, this.options.dispatcher, bindings);
+		this.ledger.apply(vim, this.options.dispatcher, bindings, this.options.registry.unmaps());
 		this.reportConflicts(conflicts);
 	}
 

@@ -92,6 +92,17 @@ declare global {
 		inoremap(keys: string, rhs: string): void;
 		onoremap(keys: string, rhs: string): void;
 
+		/**
+		 * Removes vim's built-in binding, so a key like S or , can start a longer
+		 * mapping. Lasts until Obsidian restarts; it is not undone by editing
+		 * the script.
+		 */
+		unmap(keys: string, contexts?: BindingContext[]): void;
+		nunmap(keys: string): void;
+		vunmap(keys: string): void;
+		iunmap(keys: string): void;
+		ounmap(keys: string): void;
+
 		/** Binds a key straight to an action id, with no id-vs-keys guessing. */
 		bind(keys: string, actionId: string, contexts?: BindingContext[]): void;
 
