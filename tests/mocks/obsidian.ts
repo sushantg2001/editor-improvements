@@ -263,7 +263,15 @@ export class Plugin extends Component {
 		return command;
 	}
 
-	addSettingTab(): void {}
+	removeCommand(id: string): void {
+		this.commands = this.commands.filter((command) => (command as { id: string }).id !== id);
+	}
+
+	settingTab: unknown = null;
+
+	addSettingTab(tab: unknown): void {
+		this.settingTab = tab;
+	}
 
 	addStatusBarItem(): HTMLElement {
 		const el = document.createElement("div");
@@ -318,14 +326,22 @@ class BaseComponent {
 }
 
 export class Setting {
+	/** Test helper: every setting built since the last reset, in order. */
+	static created: Setting[] = [];
+
 	settingEl: HTMLElement;
+	name = "";
+	heading = false;
+	components: BaseComponent[] = [];
 
 	constructor(containerEl: HTMLElement) {
 		this.settingEl = document.createElement("div");
 		containerEl.appendChild(this.settingEl);
+		Setting.created.push(this);
 	}
 
-	setName(): this {
+	setName(name: string): this {
+		this.name = name;
 		return this;
 	}
 
@@ -334,16 +350,21 @@ export class Setting {
 	}
 
 	setHeading(): this {
+		this.heading = true;
 		return this;
 	}
 
 	addToggle(callback: (component: BaseComponent) => void): this {
-		callback(new BaseComponent());
+		const component = new BaseComponent();
+		this.components.push(component);
+		callback(component);
 		return this;
 	}
 
 	addText(callback: (component: BaseComponent) => void): this {
-		callback(new BaseComponent());
+		const component = new BaseComponent();
+		this.components.push(component);
+		callback(component);
 		return this;
 	}
 }
