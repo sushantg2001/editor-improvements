@@ -213,6 +213,29 @@ describe("EditorImprovementsPlugin", () => {
 			expect(t.text()).toBe("hello");
 		});
 
+		it("notices the setting being flipped, without waiting for the user to click anywhere", async () => {
+			const t = await withMapping();
+
+			t.app.vimEnabled = false;
+			t.app.vault.trigger("config-changed", "vimMode");
+			press(t.cm, "g", "z");
+			expect(t.text()).toBe("hello");
+
+			t.app.vimEnabled = true;
+			t.app.vault.trigger("config-changed", "vimMode");
+			press(t.cm, "g", "z");
+			expect(t.text()).toBe("ello");
+		});
+
+		it("ignores other settings changing", async () => {
+			const t = await withMapping();
+			const before = t.plugin.runtime.mappedKeyCount;
+
+			t.app.vault.trigger("config-changed", "showLineNumber");
+
+			expect(t.plugin.runtime.mappedKeyCount).toBe(before);
+		});
+
 		it("takes them up again when vim mode comes back", async () => {
 			const t = await withMapping();
 			t.app.vimEnabled = false;
