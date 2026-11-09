@@ -52,8 +52,7 @@ hotkey slot in Settings → Hotkeys.
 - Shows the vim mode in the status bar.
 - Adds `Select all`, `Copy path` and `Paste as plain text`, which Obsidian offers only in right-click menus.
 
-Planned work is in [docs/roadmap.md](docs/roadmap.md). How the pieces fit is in
-[docs/architecture.md](docs/architecture.md).
+How the pieces fit is in [docs/architecture.md](docs/architecture.md).
 
 ## Development
 
