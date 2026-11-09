@@ -7,7 +7,7 @@ Thanks for helping with editor-improvements. The full process is in [docs/sdlc.m
 1. Branch off `main` as `<type>/<slug>`, for example `feat/search-filters` or `fix/null-date`. The types are `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`, `style` and `revert`.
 2. Add tests with the change. A bug fix starts with a failing test.
 3. Run the repo's gates locally; they are the same ones CI runs.
-4. Open a pull request titled `type(scope): summary`, for example `feat(search): add filters`. CI checks the title and the branch name. The title becomes the commit on `main`, and it decides the next version: `feat` is a minor release, `fix` a patch, and `!` or a `BREAKING CHANGE:` footer a major one. Other types release nothing.
+4. Open a pull request titled `type(scope): summary`, for example `feat(search): add filters`. CI checks the title and the branch name. The title becomes the commit on `main`, and it decides the next version: `feat` is a minor release, `fix`, `perf` and `revert` a patch, and `!` or a `BREAKING CHANGE:` footer a major one. `docs`, `test`, `refactor`, `style`, `build`, `ci` and `chore` release nothing.
 5. A maintainer squash-merges it. One commit lands on `main` with your title.
 
 Urgent fixes follow the same path as any `fix/<slug>` branch. There is no separate hotfix branch.
