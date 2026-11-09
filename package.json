@@ -1,6 +1,6 @@
 {
 	"name": "vim-tools",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "Neovim-style editing, navigation, and configuration for Obsidian",
 	"main": "main.js",
 	"type": "module",
