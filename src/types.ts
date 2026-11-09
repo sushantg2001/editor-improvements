@@ -117,6 +117,8 @@ export interface VimToolsSettings {
 	scriptsFolder: string;
 	/** Prefix `<leader>` expands to, unless a script overrides it. */
 	leader: string;
+	/** Continue a markdown list when opening a line above or below one. */
+	autoInsertListPrefix: boolean;
 }
 
 /* ------------------------------------------------------------------ actions */
@@ -160,6 +162,12 @@ export interface VimActionArgs {
 	register?: string;
 	/** Present for operators: the range the operator was invoked over. */
 	range?: VimRange;
+	/**
+	 * Present for motions: where the motion starts from, as vim's cursor sees
+	 * it. A motion is a function of this position alone, which is what lets one
+	 * definition serve a vim key, an operator and a palette command.
+	 */
+	head?: EditorPosition;
 }
 
 /** What an action may hand back. Motions return a position, operators a range. */
@@ -196,6 +204,11 @@ export interface VimActionDef {
 	defaultKeys?: KeyBinding[];
 	/** Mode to leave the editor in once the action completes. */
 	resultMode?: "insert" | "normal";
+	/**
+	 * Changes the document, so vim's `.` repeats it. Leave it off for anything
+	 * that only moves or selects: `.` should repeat the last change, not that.
+	 */
+	isEdit?: boolean;
 	run(ctx: VimContext, args: VimActionArgs): VimActionResult | Promise<VimActionResult>;
 }
 

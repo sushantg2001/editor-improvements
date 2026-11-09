@@ -4,6 +4,7 @@ import { VimDispatcher } from "../../../src/core/dispatch";
 import { MappingLedger, resolveBindings } from "../../../src/core/keymap";
 import { ModuleHost } from "../../../src/core/modules";
 import { ActionRegistry } from "../../../src/core/registry";
+import { DEFAULT_SETTINGS } from "../../../src/constants";
 import { MODULES } from "../../../src/modules";
 import { App } from "../../mocks/obsidian";
 import { makeEditor, vimApi } from "../../helpers/vim";
@@ -19,7 +20,7 @@ describe("feature modules against the real Vim API", () => {
 		new ModuleHost({
 			registry,
 			modules: MODULES,
-			context: { app: new App() as never, getVim: () => vimApi },
+			context: { app: new App() as never, getVim: () => vimApi, settings: () => DEFAULT_SETTINGS },
 		}).load();
 		const dispatcher = new VimDispatcher(
 			{} as never,

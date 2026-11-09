@@ -4,7 +4,7 @@ import { resolveBindings } from "../../../src/core/keymap";
 import { ModuleHost, moduleSource } from "../../../src/core/modules";
 import { ActionRegistry } from "../../../src/core/registry";
 import { validateContribution } from "../../../src/core/validate";
-import { RESERVED_COMMAND_IDS } from "../../../src/constants";
+import { DEFAULT_SETTINGS, RESERVED_COMMAND_IDS } from "../../../src/constants";
 import { MODULES } from "../../../src/modules";
 import { App } from "../../mocks/obsidian";
 import type { ModuleContext } from "../../../src/core/modules";
@@ -17,7 +17,7 @@ import type { ModuleContext } from "../../../src/core/modules";
  * rules are what keep forty-odd actions from several authors consistent.
  */
 
-const ctx = { app: new App(), getVim: () => null } as unknown as ModuleContext;
+const ctx = { app: new App(), getVim: () => null, settings: () => DEFAULT_SETTINGS } as unknown as ModuleContext;
 
 const instances = MODULES.map((module) => ({
 	module,

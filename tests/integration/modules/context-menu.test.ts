@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
+import { DEFAULT_SETTINGS } from "../../../src/constants";
 import { getVimMode } from "../../../src/core/editor";
 import { contextMenuContribution } from "../../../src/modules/context-menu";
 import { makeEditor, press, vimApi } from "../../helpers/vim";
@@ -13,6 +14,7 @@ function find(id: string): VimActionDef {
 	const contribution = contextMenuContribution({
 		app: {} as never,
 		getVim: () => vimApi,
+		settings: () => DEFAULT_SETTINGS,
 	});
 	const def = (contribution.actions ?? []).find((a: VimActionDef) => a.id === id);
 	if (!def) {

@@ -49,6 +49,7 @@ export function mergeSettings(data: unknown): VimToolsSettings {
 		scriptsEnabled: booleanOr(stored.scriptsEnabled, defaults.scriptsEnabled),
 		scriptsFolder: stringOr(stored.scriptsFolder, defaults.scriptsFolder),
 		leader: stringOr(stored.leader, defaults.leader, true),
+		autoInsertListPrefix: booleanOr(stored.autoInsertListPrefix, defaults.autoInsertListPrefix),
 		modePrompts,
 	};
 }
@@ -138,6 +139,23 @@ export class VimToolsSettingTab extends PluginSettingTab {
 						this.plugin.settings.leader = value || DEFAULT_SETTINGS.leader;
 						await this.plugin.saveSettings();
 						await this.plugin.reloadScripts();
+					}),
+			);
+
+		new Setting(containerEl).setName("Editing").setHeading();
+
+		new Setting(containerEl)
+			.setName("Continue lists on new lines")
+			.setDesc(
+				"When an insert line above or below command runs next to a list item, " +
+					"start the new line with the same bullet, number or checkbox.",
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.autoInsertListPrefix)
+					.onChange(async (value) => {
+						this.plugin.settings.autoInsertListPrefix = value;
+						await this.plugin.saveSettings();
 					}),
 			);
 

@@ -26,6 +26,12 @@ declare global {
 		register?: string;
 		/** Present for operators: the range the operator was invoked over. */
 		range?: { from: EditorPosition; to: EditorPosition };
+		/**
+		 * Present for motions: where the motion starts from. Return the position
+		 * to go to; the same function then serves a key, an operator and the
+		 * command palette.
+		 */
+		head?: EditorPosition;
 	}
 
 	interface VimContext {
@@ -58,6 +64,8 @@ declare global {
 		needsEditor?: boolean;
 		/** Mode to leave the editor in once the action completes. */
 		resultMode?: "insert" | "normal";
+		/** The action changes the document, so the . key repeats it. */
+		isEdit?: boolean;
 	}
 
 	interface VimToolsApi {

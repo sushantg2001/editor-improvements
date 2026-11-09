@@ -9,6 +9,7 @@ interface KeymapEntry {
 	keys: string;
 	context?: string;
 	name?: string;
+	isEdit?: boolean;
 }
 
 /**
@@ -29,9 +30,9 @@ function fakeVim() {
 			_kind: string,
 			name: string,
 			_args: unknown,
-			extra: { context?: string },
+			extra: { context?: string; isEdit?: boolean },
 		) {
-			defaultKeymap.unshift({ keys, context: extra?.context, name });
+			defaultKeymap.unshift({ keys, context: extra?.context, name, isEdit: extra?.isEdit });
 		},
 		unmap(keys: string, context?: string) {
 			for (let i = 0; i < defaultKeymap.length; i++) {
@@ -179,6 +180,17 @@ describe("MappingLedger", () => {
 		expect(vim.defaultKeymap).toHaveLength(1);
 		expect(vim.defaultKeymap[0]?.name).toBe("somebodyElse");
 		expect(ledger.size).toBe(0);
+	});
+
+	it("flags an edit for vim's dot command, and leaves other actions unflagged", () => {
+		const { registry, dispatcher, vim, ledger } = setup();
+		give(registry, { ...action("change", "gx"), isEdit: true });
+		give(registry, action("move", "gy"));
+
+		ledger.apply(vim, dispatcher, resolveBindings(registry).bindings);
+
+		const flagged = Object.fromEntries(vim.defaultKeymap.map((e) => [e.keys, e.isEdit]));
+		expect(flagged).toEqual({ gx: true, gy: undefined });
 	});
 
 	it("replaces rather than duplicates when applied twice", () => {
