@@ -1,0 +1,175 @@
+import { Notice, Plugin } from "obsidian";
+
+import { CommandSurface } from "./core/commands";
+import { VimDispatcher } from "./core/dispatch";
+import {
+	getActiveCm,
+	getActiveEditorView,
+	getActiveMarkdownView,
+	getVimMode,
+} from "./core/editor";
+import { ModeTracker } from "./core/modes";
+import { ActionRegistry } from "./core/registry";
+import { VimToolsRuntime } from "./core/runtime";
+import { VimBridge, isVimEnabled } from "./core/vim-bridge";
+import { builtinContribution } from "./modules/builtin";
+import { ScriptHost } from "./scripts/loader";
+import { scaffoldScripts } from "./scripts/scaffold";
+import { VimToolsSettingTab, mergeSettings, resolveScriptsFolder } from "./settings";
+import { ModeStatusBar } from "./ui/status-bar";
+import type { CodeMirrorShim, VimContext, VimToolsSettings } from "./types";
+
+/**
+ * Wiring only.
+ *
+ * Everything the plugin can do lives in the registry as a contribution from
+ * some source; `VimToolsRuntime` is the only thing that projects the registry
+ * onto vim's keymap and Obsidian's commands. This class builds those pieces,
+ * hands them to each other, and otherwise stays out of the way.
+ */
+export default class VimToolsPlugin extends Plugin {
+	settings!: VimToolsSettings;
+	registry!: ActionRegistry;
+	bridge!: VimBridge;
+	modes!: ModeTracker;
+	scripts!: ScriptHost;
+	runtime!: VimToolsRuntime;
+
+	private statusBar: ModeStatusBar | null = null;
+
+	async onload(): Promise<void> {
+		this.settings = mergeSettings(await this.loadData());
+		this.addSettingTab(new VimToolsSettingTab(this.app, this));
+
+		this.registry = new ActionRegistry();
+		this.bridge = this.addChild(new VimBridge(this.app));
+		this.modes = this.addChild(new ModeTracker(this.app));
+
+		const getVim = () => this.bridge.vim;
+		const dispatcher = new VimDispatcher(
+			this.app,
+			this.registry,
+			(cm) => this.buildContext(cm),
+			getVim,
+		);
+
+		this.statusBar = new ModeStatusBar(this.addStatusBarItem(), () => this.settings);
+		this.modes.onChange((mode) => this.statusBar?.render(mode));
+
+		this.registry.set("builtin", builtinContribution({ app: this.app, getVim }));
+
+		this.scripts = this.addChild(
+			new ScriptHost({
+				app: this.app,
+				registry: this.registry,
+				getVim,
+				isEnabled: () => this.settings.scriptsEnabled,
+				getFolder: () => resolveScriptsFolder(this.app, this.settings),
+				getLeader: () => this.settings.leader,
+			}),
+		);
+
+		this.runtime = this.addChild(
+			new VimToolsRuntime({
+				registry: this.registry,
+				bridge: this.bridge,
+				dispatcher,
+				commands: new CommandSurface(this, this.registry, dispatcher, () =>
+					getActiveCm(this.app),
+				),
+			}),
+		);
+
+		this.registerCommands();
+	}
+
+	async saveSettings(): Promise<void> {
+		await this.saveData(this.settings);
+		this.statusBar?.render(this.modes.current);
+	}
+
+	/**
+	 * Picks up `data.json` being rewritten by Obsidian Sync or a third-party
+	 * sync plugin. Without this, settings changed on another device are ignored
+	 * and then overwritten by the next local save.
+	 */
+	async onExternalSettingsChange(): Promise<void> {
+		this.settings = mergeSettings(await this.loadData());
+		this.statusBar?.render(this.modes.current);
+		await this.reloadScripts();
+	}
+
+	/** Re-runs every script and reports what happened. */
+	async reloadScripts(): Promise<void> {
+		const result = await this.scripts.reload();
+		if (!this.settings.scriptsEnabled || result.errors.length > 0) {
+			// Errors already surfaced their own notice naming the file.
+			return;
+		}
+		new Notice(
+			result.loaded.length > 0
+				? `Vim Tools: loaded ${result.loaded.length} script(s).`
+				: `Vim Tools: no scripts found in ${this.scripts.folder}.`,
+		);
+	}
+
+	private registerCommands(): void {
+		this.addCommand({
+			id: "reload-config",
+			name: "Reload configuration",
+			callback: () => {
+				this.bridge.refresh();
+				this.modes.attachToActiveEditor();
+				void this.reloadScripts();
+			},
+		});
+
+		this.addCommand({
+			id: "show-status",
+			name: "Show status",
+			callback: () => {
+				if (!isVimEnabled(this.app)) {
+					new Notice("Vim Tools: vim mode is off. Enable it in Settings → Editor.");
+					return;
+				}
+				const { loaded, errors } = this.scripts.result;
+				new Notice(
+					[
+						`Vim Tools: ${this.modes.current} mode`,
+						`${this.registry.actions().length} actions, ${this.runtime.mappedKeyCount} keys`,
+						this.settings.scriptsEnabled
+							? `${loaded.length} script(s), ${errors.length} error(s)`
+							: "scripts disabled",
+					].join("\n"),
+				);
+			},
+		});
+
+		this.addCommand({
+			id: "create-scripts-folder",
+			name: "Create scripts folder with a starter init.js",
+			callback: () => {
+				void scaffoldScripts(
+					this.app,
+					resolveScriptsFolder(this.app, this.settings),
+				).then(() => this.reloadScripts());
+			},
+		});
+	}
+
+	/** Assembles everything an action needs, or null when there is no editor. */
+	private buildContext(cm: CodeMirrorShim): VimContext | null {
+		const view = getActiveMarkdownView(this.app);
+		const editorView = getActiveEditorView(this.app);
+		if (!view || !editorView) {
+			return null;
+		}
+		return {
+			app: this.app,
+			editor: view.editor,
+			view: editorView,
+			cm,
+			mode: getVimMode(cm),
+		};
+	}
+}

@@ -1,0 +1,118 @@
+# Release PR and draft on main; the release itself runs from a tag you sign.
+#
+# release-please keeps one "chore(main): release x.y.z" pull request up to date. When you merge it,
+# the next run on main creates a DRAFT release with the notes. It creates NO tag: a tag it created
+# would not be signed by you, and a tag made with GITHUB_TOKEN starts no workflow. Once the draft
+# exists (about a minute after the merge) you create the tag:
+#
+#   git tag -s x.y.z -m x.y.z && git push origin x.y.z     (one YubiKey tap)
+#
+# That push starts this workflow: `check` verifies the tag, then `release` waits for your approval
+# (environment "release"), builds, attests, attaches the files and publishes the draft.
+#
+#   feat -> minor, fix -> patch, feat! / BREAKING CHANGE -> major, anything else -> no release.
+#
+# Force a version with a commit whose body has `Release-As: x.y.z`.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+      - "[0-9]+.[0-9]+.[0-9]+-*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Push to main: keep the release PR current; after the release PR is merged, create the draft release.
+  release-please:
+    name: Release PR and draft
+    if: ${{ github.ref_type == 'branch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # Push of a tag: it must be a signed, annotated tag on the default branch.
+  check:
+    name: Check tag
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TAG: ${{ github.ref_name }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+      - name: Tag is annotated and signed
+        run: |
+          read -r type sha < <(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '"\(.object.type) \(.object.sha)"')
+          [ "$type" = "tag" ] || { echo "::error::$TAG is not an annotated tag. Create it with git tag -s."; exit 1; }
+          [ "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$sha" --jq .verification.verified)" = "true" ] \
+            || { echo "::error::The signature on tag $TAG is not verified."; exit 1; }
+      - name: Tagged commit is on the default branch
+        run: |
+          commit="$(git rev-parse "$TAG^{commit}")"
+          git merge-base --is-ancestor "$commit" "origin/$DEFAULT_BRANCH" \
+            || { echo "::error::$TAG is not on $DEFAULT_BRANCH."; exit 1; }
+      - name: Version files match the tag
+        run: |
+          for f in package.json manifest.json; do
+            [ "$(jq -r .version "$f")" = "$TAG" ] || { echo "::error::$f differs from $TAG"; exit 1; }
+          done
+
+  release:
+    name: Release
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Waits for your approval. `just github repo --harden` creates the environment with you as reviewer.
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      # release-please creates the draft when the release PR is merged. If you pushed the tag
+      # before that finished (about a minute), wait for it instead of failing.
+      - name: Wait for the draft release
+        run: |
+          for i in $(seq 1 18); do
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 && exit 0
+            echo "No draft release for $TAG yet; waiting for release-please ($i/18)"; sleep 10
+          done
+          echo "::error::No draft release for $TAG. Merge the release PR and let the 'Release PR and draft' run on main finish, then re-run this workflow."; exit 1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - name: Build
+        run: |
+          bun install --frozen-lockfile
+          bun run build
+      - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
+      - name: Attach files and publish the draft
+        run: |
+          gh release upload "$TAG" main.js manifest.json styles.css --clobber
+          gh release edit "$TAG" --draft=false --verify-tag

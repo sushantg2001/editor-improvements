@@ -1,0 +1,25 @@
+.vim-tools-mode {
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	letter-spacing: 0.05em;
+}
+
+.vim-tools-mode.is-hidden {
+	display: none;
+}
+
+.vim-tools-mode.vt-mode-normal {
+	color: var(--text-muted);
+}
+
+.vim-tools-mode.vt-mode-insert {
+	color: var(--color-green);
+}
+
+.vim-tools-mode.vt-mode-visual {
+	color: var(--color-yellow);
+}
+
+.vim-tools-mode.vt-mode-replace {
+	color: var(--color-red);
+}
