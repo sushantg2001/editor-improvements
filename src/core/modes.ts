@@ -69,9 +69,19 @@ export class ModeTracker extends Component {
 	private handleModeChange(event: VimModeChangeEvent | undefined): void {
 		switch (event?.mode) {
 			case "insert":
-			case "visual":
 			case "replace":
 				this.setMode(event.mode);
+				break;
+			case "visual":
+				// Linewise and blockwise are not modes of their own in the event:
+				// they arrive as a sub-mode of "visual".
+				this.setMode(
+					event.subMode === "linewise"
+						? "visual-line"
+						: event.subMode === "blockwise"
+							? "visual-block"
+							: "visual",
+				);
 				break;
 			default:
 				this.setMode("normal");
