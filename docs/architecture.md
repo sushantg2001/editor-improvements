@@ -28,6 +28,10 @@ src/
   ui/              status bar
 ```
 
+**Modules.** A feature is a `FeatureModule`: one file in `src/modules/` and one line in `src/modules/index.ts`.
+`ModuleHost` starts each one and hands what it contributes to the registry in a single batch, so `main.ts` never
+changes when a feature is added. A contract test checks every listed module. See [CONTRIBUTING.md](../CONTRIBUTING.md).
+
 **Registry.** `ActionRegistry` is the single source of truth. Every source (a built-in module, or one script file)
 contributes actions and bindings, and re-setting a source replaces everything it contributed. Reload is therefore
 atomic and has no separate teardown path.
@@ -42,6 +46,10 @@ in the registry on every call. Bodies are hot-swappable while the stub stays put
 
 **Motions and operators.** A motion bound only to `normal` is invisible to `d`/`y`/`c`, because CodeMirror rewrites
 the context to `operatorPending` while an operator waits. The keymap mirrors motion bindings into that context.
+
+**Key names.** The Vim addon names a key event before looking for a mapping (`<Space>`, `<CR>`, `<C-h>`) and
+compares a plain remap with that name as written. Script keys are rewritten to those names first, so `<cr>`,
+`<Enter>` and a literal space all work (`src/core/keys.ts`).
 
 **Dot repeat.** Vim's `.` repeats only commands registered as edits. An action sets `isEdit` when it changes the
 document, and the keymap passes that on, so `.` repeats it. Motions and selections leave it off.
