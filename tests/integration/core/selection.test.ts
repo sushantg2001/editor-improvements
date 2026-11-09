@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getVimMode } from "../../src/core/editor";
-import { makeEditor, press, vimApi } from "./helpers";
+import { getVimMode } from "../../../src/core/editor";
+import { makeEditor, press, vimApi } from "../../helpers/vim";
 
 afterEach(() => {
 	vimApi.mapclear();

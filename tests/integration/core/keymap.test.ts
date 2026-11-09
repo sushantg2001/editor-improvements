@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { VimDispatcher } from "../../src/core/dispatch";
-import { MappingLedger, resolveBindings } from "../../src/core/keymap";
-import { ActionRegistry } from "../../src/core/registry";
-import { makeEditor, press, vimApi } from "./helpers";
-import type { VimActionDef } from "../../src/types";
+import { VimDispatcher } from "../../../src/core/dispatch";
+import { MappingLedger, resolveBindings } from "../../../src/core/keymap";
+import { ActionRegistry } from "../../../src/core/registry";
+import { makeEditor, press, vimApi } from "../../helpers/vim";
+import type { VimActionDef } from "../../../src/types";
 
 afterEach(() => {
 	// defaultKeymap is a module singleton shared by every editor.

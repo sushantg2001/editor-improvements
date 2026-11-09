@@ -9,10 +9,11 @@ import {
 	getVimMode,
 } from "./core/editor";
 import { ModeTracker } from "./core/modes";
+import { ModuleHost } from "./core/modules";
 import { ActionRegistry } from "./core/registry";
 import { VimToolsRuntime } from "./core/runtime";
 import { VimBridge, isVimEnabled } from "./core/vim-bridge";
-import { builtinContribution } from "./modules/builtin";
+import { MODULES } from "./modules";
 import { ScriptHost } from "./scripts/loader";
 import { scaffoldScripts } from "./scripts/scaffold";
 import { VimToolsSettingTab, mergeSettings, resolveScriptsFolder } from "./settings";
@@ -32,6 +33,7 @@ export default class VimToolsPlugin extends Plugin {
 	registry!: ActionRegistry;
 	bridge!: VimBridge;
 	modes!: ModeTracker;
+	modulesHost!: ModuleHost;
 	scripts!: ScriptHost;
 	runtime!: VimToolsRuntime;
 
@@ -56,7 +58,17 @@ export default class VimToolsPlugin extends Plugin {
 		this.statusBar = new ModeStatusBar(this.addStatusBarItem(), () => this.settings);
 		this.modes.onChange((mode) => this.statusBar?.render(mode));
 
-		this.registry.set("builtin", builtinContribution({ app: this.app, getVim }));
+		this.modulesHost = this.addChild(
+			new ModuleHost({
+				registry: this.registry,
+				modules: MODULES,
+				context: { app: this.app, getVim },
+				onError: (module, error) => {
+					const message = error instanceof Error ? error.message : String(error);
+					new Notice(`Vim Tools: module "${module.id}" failed to start\n${message}`, 8000);
+				},
+			}),
+		);
 
 		this.scripts = this.addChild(
 			new ScriptHost({

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { ActionRegistry } from "../../src/core/registry";
-import type { VimActionDef } from "../../src/types";
+import { ActionRegistry } from "../../../src/core/registry";
+import type { VimActionDef } from "../../../src/types";
 
 function action(id: string, extra: Partial<VimActionDef> = {}): VimActionDef {
 	return {

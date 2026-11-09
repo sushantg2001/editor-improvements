@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { getVimMode } from "../../src/core/editor";
-import type { CodeMirrorShim } from "../../src/types";
+import { getVimMode } from "../../../src/core/editor";
+import type { CodeMirrorShim } from "../../../src/types";
 
 function cmWithMode(mode: string | undefined): CodeMirrorShim {
 	return { state: { vim: { mode } } } as CodeMirrorShim;

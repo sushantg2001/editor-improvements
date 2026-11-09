@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { MappingLedger, resolveBindings } from "../../src/core/keymap";
-import { ActionRegistry } from "../../src/core/registry";
-import { VimDispatcher } from "../../src/core/dispatch";
-import { ScriptHost } from "../../src/scripts/loader";
-import { App } from "../mocks/obsidian";
-import { makeEditor, press, vimApi } from "./helpers";
+import { MappingLedger, resolveBindings } from "../../../src/core/keymap";
+import { ActionRegistry } from "../../../src/core/registry";
+import { VimDispatcher } from "../../../src/core/dispatch";
+import { ScriptHost } from "../../../src/scripts/loader";
+import { App } from "../../mocks/obsidian";
+import { makeEditor, press, vimApi } from "../../helpers/vim";
 
 const FOLDER = ".obsidian/vim-tools";
 

@@ -2,6 +2,13 @@ import type { VimMode, VimToolsSettings } from "./types";
 
 export const PLUGIN_ID = "vim-tools";
 
+/** Command ids the plugin registers itself; no action may reuse one. */
+export const RESERVED_COMMAND_IDS: readonly string[] = [
+	"reload-config",
+	"show-status",
+	"create-scripts-folder",
+];
+
 export const VIM_MODES: VimMode[] = [
 	"normal",
 	"insert",

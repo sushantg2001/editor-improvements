@@ -2,6 +2,7 @@ import { Component, Notice, normalizePath } from "obsidian";
 import type { App, DataAdapter } from "obsidian";
 
 import { createScriptApi } from "./api";
+import { validateContribution } from "../core/validate";
 import type { ActionRegistry, Contribution } from "../core/registry";
 import type { ActionSource, VimApi } from "../types";
 
@@ -163,6 +164,11 @@ export class ScriptHost extends Component {
 			return {
 				error: { file, message: describe(error), line: await scriptLine(error) },
 			};
+		}
+
+		const problems = validateContribution(contribution);
+		if (problems.length > 0) {
+			return { error: { file, message: problems.join("\n") } };
 		}
 
 		return { contribution };

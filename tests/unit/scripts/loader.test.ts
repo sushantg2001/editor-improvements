@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { ActionRegistry } from "../../src/core/registry";
-import { ScriptHost } from "../../src/scripts/loader";
-import { App, Notice } from "../mocks/obsidian";
+import { ActionRegistry } from "../../../src/core/registry";
+import { ScriptHost } from "../../../src/scripts/loader";
+import { App, Notice } from "../../mocks/obsidian";
 
 const FOLDER = ".obsidian/vim-tools";
 

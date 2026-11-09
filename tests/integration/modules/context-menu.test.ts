@@ -1,22 +1,22 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { getVimMode } from "../../src/core/editor";
-import { builtinContribution } from "../../src/modules/builtin";
-import { makeEditor, press, vimApi } from "./helpers";
-import type { VimActionDef } from "../../src/types";
+import { getVimMode } from "../../../src/core/editor";
+import { contextMenuContribution } from "../../../src/modules/context-menu";
+import { makeEditor, press, vimApi } from "../../helpers/vim";
+import type { VimActionDef } from "../../../src/types";
 
 afterEach(() => {
 	vimApi.mapclear();
 });
 
 function find(id: string): VimActionDef {
-	const contribution = builtinContribution({
+	const contribution = contextMenuContribution({
 		app: {} as never,
 		getVim: () => vimApi,
 	});
 	const def = (contribution.actions ?? []).find((a: VimActionDef) => a.id === id);
 	if (!def) {
-		throw new Error(`no builtin action ${id}`);
+		throw new Error(`no context-menu action ${id}`);
 	}
 	return def;
 }
