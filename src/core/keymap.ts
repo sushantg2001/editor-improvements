@@ -129,6 +129,8 @@ export class MappingLedger {
 	 * way to restore it, so it stays gone until Obsidian restarts.
 	 */
 	private readonly released = new Set<string>();
+	/** Keys whose context-less built-in has been removed, so it is not looked for twice. */
+	private readonly releasedEverywhere = new Set<string>();
 
 	/**
 	 * Replaces every binding we own with `bindings`, after clearing the built-in
@@ -158,9 +160,19 @@ export class MappingLedger {
 		for (const { keys, contexts } of unmaps) {
 			for (const context of contexts ?? [undefined]) {
 				const slot = `${context ?? "all"}:${keys}`;
-				if (!this.released.has(slot)) {
-					this.released.add(slot);
-					vim.unmap(keys, context);
+				if (this.released.has(slot)) {
+					continue;
+				}
+				this.released.add(slot);
+				// Vim matches the context exactly. `S` has one entry per mode, but
+				// a key such as <Space> has a single entry with no context at all,
+				// which asking for "normal" never finds. Fall back to that entry,
+				// once: it covers every mode, so it is gone for all of them.
+				const removed = vim.unmap(keys, context);
+				if (!removed && context !== undefined && !this.releasedEverywhere.has(keys)) {
+					if (vim.unmap(keys, undefined)) {
+						this.releasedEverywhere.add(keys);
+					}
 				}
 			}
 		}

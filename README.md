@@ -27,6 +27,7 @@ that a synced vault runs on every device. See [SECURITY.md](SECURITY.md).
 
 ```js
 vim.leader(" ");
+vim.nunmap("<Space>"); // Space moves right, which would hide <leader>d
 
 vim.inoremap("jk", "<Esc>");
 vim.nnoremap("H", "^");
@@ -46,7 +47,10 @@ hotkey slot in Settings → Hotkeys.
 
 `vim.nunmap("S")` (also `vunmap`, `iunmap`, `ounmap` and `unmap`) removes a built-in binding so the key can start a
 longer mapping, like `Sl`. Unlike a mapping it is not undone when you edit the script: the key stays free until
-Obsidian restarts.
+Obsidian restarts. A built-in that applies in every mode, like `<Space>`, goes from every mode.
+
+Write keys as vim does. Spellings such as `<cr>`, `<Enter>`, `<c-h>` and `<lt>`, and a literal space for a space
+leader, are rewritten to the names the editor uses, so they work.
 
 ## What it does
 

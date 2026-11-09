@@ -1,6 +1,7 @@
 import { Notice } from "obsidian";
 import type { App } from "obsidian";
 
+import { normalizeKeys } from "../core/keys";
 import type { BindingSpec, Contribution, UnmapSpec } from "../core/registry";
 import type {
 	BindingContext,
@@ -56,6 +57,8 @@ export interface ScriptApi {
 	 *
 	 * Unlike a mapping, this is not undone when a script is edited or the
 	 * plugin is turned off: the built-in stays gone until Obsidian restarts.
+	 * A built-in that applies in every mode, such as `<Space>`, is removed from
+	 * every mode, even when only one is named.
 	 */
 	unmap(keys: string, contexts?: BindingContext[]): void;
 	nunmap(keys: string): void;
@@ -136,6 +139,14 @@ export function createScriptApi(deps: ScriptApiDeps): {
 	const actionKindOf = (id: string): VimActionDef["kind"] | undefined =>
 		defined.get(id) ?? (deps.knowsAction(id) ? "action" : undefined);
 
+	/** The keys a mapping listens for, spelt the way the Vim addon will see them. */
+	const listenFor = (keys: string): string =>
+		normalizeKeys(expandLeader(keys, leader), { literalSpace: true });
+
+	/** The keys a mapping types, whose spaces may belong to an ex command. */
+	const typeKeys = (keys: string): string =>
+		normalizeKeys(expandLeader(keys, leader), { literalSpace: false });
+
 	const addMap = (
 		keys: string,
 		rhs: string,
@@ -148,11 +159,11 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		// obvious thing.
 		const kind = actionKindOf(rhs);
 		bindings.push({
-			keys: expandLeader(keys, leader),
+			keys: listenFor(keys),
 			contexts,
 			target: kind
 				? { kind: "action", id: rhs, actionKind: kind }
-				: { kind: "keys", rhs: expandLeader(rhs, leader), recursive },
+				: { kind: "keys", rhs: typeKeys(rhs), recursive },
 		});
 	};
 
@@ -176,7 +187,7 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		onoremap: (keys, rhs) => addMap(keys, rhs, ["operatorPending"], false),
 
 		unmap: (keys, contexts) => {
-			unmaps.push({ keys: expandLeader(keys, leader), contexts });
+			unmaps.push({ keys: listenFor(keys), contexts });
 		},
 		nunmap: (keys) => api.unmap(keys, ["normal"]),
 		vunmap: (keys) => api.unmap(keys, ["visual"]),
@@ -185,7 +196,7 @@ export function createScriptApi(deps: ScriptApiDeps): {
 
 		bind: (keys, actionId, contexts = ["normal"]) => {
 			bindings.push({
-				keys: expandLeader(keys, leader),
+				keys: listenFor(keys),
 				contexts,
 				target: {
 					kind: "action",
