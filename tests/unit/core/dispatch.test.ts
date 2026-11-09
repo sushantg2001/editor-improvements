@@ -7,7 +7,7 @@ import type { CodeMirrorShim, VimActionDef, VimApi, VimContext } from "../../../
 
 function fakeCm(mode = "normal"): CodeMirrorShim {
 	return {
-		state: { vim: { mode } },
+		state: { vim: { mode, visualMode: mode.startsWith("visual"), insertMode: mode === "insert" } },
 		getInputField: () => document.createElement("div"),
 		on: () => {},
 		off: () => {},
@@ -23,10 +23,10 @@ function setup(options: { withEditor?: boolean; mode?: string } = {}) {
 	const app = new App();
 	const cm = fakeCm(mode);
 	const vim = {
-		enterInsertMode: vi.fn(),
+		handleKey: vi.fn(),
 		exitVisualMode: vi.fn(),
 	} as unknown as VimApi & {
-		enterInsertMode: ReturnType<typeof vi.fn>;
+		handleKey: ReturnType<typeof vi.fn>;
 		exitVisualMode: ReturnType<typeof vi.fn>;
 	};
 	const ctx = {
@@ -147,7 +147,7 @@ describe("VimDispatcher result modes", () => {
 
 		dispatcher.invoke("a", cm);
 
-		expect(vim.enterInsertMode).toHaveBeenCalledOnce();
+		expect(vim.handleKey).toHaveBeenCalledExactlyOnceWith(cm, "i", "user");
 	});
 
 	it("enters insert mode after an async action resolves", async () => {
@@ -157,12 +157,12 @@ describe("VimDispatcher result modes", () => {
 		give(action("a", { resultMode: "insert", run: () => Promise.resolve() }));
 
 		dispatcher.invoke("a", cm);
-		expect(vim.enterInsertMode).not.toHaveBeenCalled();
+		expect(vim.handleKey).not.toHaveBeenCalled();
 
 		await Promise.resolve();
 		await Promise.resolve();
 
-		expect(vim.enterInsertMode).toHaveBeenCalledOnce();
+		expect(vim.handleKey).toHaveBeenCalledExactlyOnceWith(cm, "i", "user");
 	});
 
 	it("does not re-enter insert mode when already there", () => {
@@ -171,7 +171,7 @@ describe("VimDispatcher result modes", () => {
 
 		dispatcher.invoke("a", cm);
 
-		expect(vim.enterInsertMode).not.toHaveBeenCalled();
+		expect(vim.handleKey).not.toHaveBeenCalled();
 	});
 
 	it("skips result mode for an action with no editor", () => {
@@ -180,6 +180,6 @@ describe("VimDispatcher result modes", () => {
 
 		dispatcher.invoke("a", null);
 
-		expect(vim.enterInsertMode).not.toHaveBeenCalled();
+		expect(vim.handleKey).not.toHaveBeenCalled();
 	});
 });

@@ -2,6 +2,7 @@ import { Notice } from "obsidian";
 import type { App, EditorPosition } from "obsidian";
 
 import type { ActionRegistry } from "./registry";
+import { enterInsert, leaveVisual } from "./vim-modes";
 import type {
 	CodeMirrorShim,
 	VimActionArgs,
@@ -179,13 +180,12 @@ export class VimDispatcher {
 		if (!vim) {
 			return;
 		}
-		// Re-read the mode: an async action may have changed it since the
+		// Read the mode afresh: an async action may have changed it since the
 		// context was built.
-		const mode = ctx.cm.state.vim?.mode;
-		if (resultMode === "insert" && mode !== "insert") {
-			vim.enterInsertMode(ctx.cm);
-		} else if (resultMode === "normal" && mode === "visual") {
-			vim.exitVisualMode(ctx.cm);
+		if (resultMode === "insert") {
+			enterInsert(vim, ctx.cm);
+		} else {
+			leaveVisual(vim, ctx.cm);
 		}
 	}
 
