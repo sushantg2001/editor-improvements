@@ -6,6 +6,7 @@ import { TYPINGS, TYPINGS_FILENAME } from "./typings";
 import { validateContribution } from "../core/validate";
 import type { ActionRegistry, Contribution } from "../core/registry";
 import type { ActionSource, VimApi } from "../types";
+import type { ScriptApi } from "./api";
 
 /** `init.js` runs first; the rest follow in lexical order, like Neovim's plugin/. */
 const ENTRY_POINT = "init.js";
@@ -218,15 +219,18 @@ export class ScriptHost extends Component {
 			knowsAction: (id) => pending.has(id) || registry.has(id),
 		});
 
+		const guarded = sealAfterRun(api, file);
 		try {
 			// Async so scripts may `await`. Not a sandbox — see SECURITY.md.
 			const run = new AsyncFunction("vim", wrap(code));
-			await run(api);
+			await run(guarded.api);
 		} catch (error) {
+			guarded.seal();
 			return {
 				error: { file, message: describe(error), line: await scriptLine(error) },
 			};
 		}
+		guarded.seal();
 
 		const problems = validateContribution(contribution);
 		if (problems.length > 0) {
@@ -278,6 +282,64 @@ export class ScriptHost extends Component {
 	}
 }
 
+/** The parts of the API that declare configuration, as opposed to doing something. */
+const DECLARATIONS = new Set([
+	"action",
+	"motion",
+	"operator",
+	"map",
+	"nmap",
+	"vmap",
+	"imap",
+	"omap",
+	"noremap",
+	"nnoremap",
+	"vnoremap",
+	"inoremap",
+	"onoremap",
+	"unmap",
+	"nunmap",
+	"vunmap",
+	"iunmap",
+	"ounmap",
+	"bind",
+	"leader",
+]);
+
+/**
+ * Wraps the API so that declaring things stops working once the script has
+ * finished.
+ *
+ * What a script declares is collected while it runs and then handed to the
+ * registry as one unit. A declaration made afterwards, from a timer or a
+ * callback, would be added to that unit behind the registry's back: the action
+ * would exist, but no command, key or notification would follow, and the next
+ * change would apply it half way. Saying so is better. The parts that act
+ * rather than declare, such as `obcommand`, are used from inside actions long
+ * after the script has finished and stay open.
+ */
+function sealAfterRun(api: ScriptApi, file: string): { api: ScriptApi; seal: () => void } {
+	let sealed = false;
+	const guarded = new Proxy(api, {
+		get(target, property, receiver) {
+			const value: unknown = Reflect.get(target, property, receiver);
+			if (typeof value === "function" && typeof property === "string" && DECLARATIONS.has(property)) {
+				return (...args: unknown[]) => {
+					if (sealed) {
+						throw new Error(
+							`vim.${property} was called after ${file} finished running. ` +
+								`Declare everything while the script runs, including after an await.`,
+						);
+					}
+					return (value as (...a: unknown[]) => unknown).apply(target, args);
+				};
+			}
+			return value;
+		},
+	});
+	return { api: guarded, seal: () => (sealed = true) };
+}
+
 export function sourceOf(file: string): ActionSource {
 	return `script:${file}`;
 }
@@ -322,7 +384,7 @@ async function calibrate(): Promise<number> {
 	try {
 		await new AsyncFunction("vim", wrap(`throw new Error("calibration");`))(null);
 	} catch (error) {
-		const reported = firstFrameLine(error);
+		const reported = scriptFrameLine(error);
 		if (reported !== undefined) {
 			// The throw above is the script's line 1.
 			bodyOffset = reported - 1;
@@ -333,7 +395,7 @@ async function calibrate(): Promise<number> {
 
 /** The 1-based line within the user's script, when it can be recovered. */
 async function scriptLine(error: unknown): Promise<number | undefined> {
-	const reported = firstFrameLine(error);
+	const reported = scriptFrameLine(error);
 	if (reported === undefined) {
 		return undefined;
 	}
@@ -341,13 +403,26 @@ async function scriptLine(error: unknown): Promise<number | undefined> {
 	return line > 0 ? line : undefined;
 }
 
-function firstFrameLine(error: unknown): number | undefined {
+/**
+ * The line reported by the first stack frame that is the script's own code.
+ *
+ * The script is compiled with `new AsyncFunction`, so its frames are the ones
+ * named `anonymous` (or, in some engines, located in `<anonymous>`). The first
+ * frame of the stack is often somebody else's: an error thrown by the API
+ * points into the plugin, and a syntax error has no frame in the script at
+ * all. Taking the first frame whatever it was reported plugin line numbers as
+ * if they were the script's.
+ */
+function scriptFrameLine(error: unknown): number | undefined {
 	if (!(error instanceof Error) || !error.stack) {
 		return undefined;
 	}
-	// Skip the message line; the first frame is where the throw happened.
 	const [, ...frames] = error.stack.split("\n");
 	for (const frame of frames) {
+		const isScript = /^\s*at (?:async )?anonymous\b/.test(frame) || /<anonymous>:\d+:\d+\)?\s*$/.test(frame);
+		if (!isScript) {
+			continue;
+		}
 		const match = /:(\d+):\d+\)?\s*$/.exec(frame);
 		if (match?.[1]) {
 			return Number.parseInt(match[1], 10);
