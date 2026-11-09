@@ -5,6 +5,7 @@ import { MappingLedger, resolveBindings } from "./keymap";
 import type { VimDispatcher } from "./dispatch";
 import type { ActionRegistry } from "./registry";
 import type { VimBridge } from "./vim-bridge";
+import type { VimApi } from "../types";
 
 export interface RuntimeOptions {
 	registry: ActionRegistry;
@@ -25,6 +26,13 @@ export interface RuntimeOptions {
  */
 export class VimToolsRuntime extends Component {
 	private readonly ledger = new MappingLedger();
+	/**
+	 * The Vim API as last seen. The bridge forgets it the moment vim mode goes
+	 * off, which is exactly when the keys must be handed back, so teardown
+	 * cannot ask the bridge. The API is a process-wide singleton and its keymap
+	 * outlives the editors, so holding on to it is safe.
+	 */
+	private lastVim: VimApi | null = null;
 
 	constructor(private readonly options: RuntimeOptions) {
 		super();
@@ -33,7 +41,10 @@ export class VimToolsRuntime extends Component {
 	override onload(): void {
 		const { registry, bridge } = this.options;
 		this.register(registry.onChange(() => this.rebuild()));
-		bridge.onAvailable(() => this.rebuild());
+		bridge.onAvailable((vim) => {
+			this.lastVim = vim;
+			this.rebuild();
+		});
 		bridge.onUnavailable(() => this.releaseKeys());
 		// Teardown must outlive the bridge's own unload, hence the explicit
 		// registration rather than relying on onunload ordering.
@@ -60,7 +71,7 @@ export class VimToolsRuntime extends Component {
 	}
 
 	private releaseKeys(): void {
-		const vim = this.options.bridge.vim;
+		const vim = this.options.bridge.vim ?? this.lastVim;
 		if (vim) {
 			this.ledger.clear(vim);
 		}
