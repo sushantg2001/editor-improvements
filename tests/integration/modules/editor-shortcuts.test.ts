@@ -592,3 +592,55 @@ describe("vault toggles", () => {
 		expect(t.app.vault.getConfig("useTab")).toBe(false);
 	});
 });
+
+describe("position-based edits from visual mode work from vim's cursor", () => {
+	// CodeMirror's selection does not end where vim's cursor is: a linewise
+	// selection ends at the end of the line, a characterwise one a character
+	// past the cursor. Using it would put "delete to end of line" at the end
+	// already, where it deletes the newline.
+	const SENTENCE = "alpha bravo\ncharlie";
+
+	it.each([
+		["V", ["V"]],
+		["v", ["v"]],
+	] as const)("deleteToEndOfLine from %s keeps the line break", (_name, mode) => {
+		const t = h(SENTENCE);
+		t.bind("gD", "deleteToEndOfLine");
+
+		press(t.cm, "w", ...mode, "g", "D");
+
+		expect(t.text()).toBe("alpha \ncharlie");
+		expect(modeOf(t.cm)).toBe("normal");
+	});
+
+	it("deleteToEndOfLine from a characterwise selection starts at the cursor's character", () => {
+		const t = h(SENTENCE);
+		t.bind("gD", "deleteToEndOfLine");
+
+		press(t.cm, "w", "v", "e", "g", "D");
+
+		expect(t.text()).toBe("alpha brav\ncharlie");
+	});
+
+	it.each([
+		["V", ["V"]],
+		["v", ["v"]],
+	] as const)("deleteToStartOfLine from %s deletes up to the cursor, not the whole line", (_name, mode) => {
+		const t = h(SENTENCE);
+		t.bind("g0", "deleteToStartOfLine");
+
+		press(t.cm, "w", ...mode, "g", "0");
+
+		expect(t.text()).toBe("bravo\ncharlie");
+		expect(modeOf(t.cm)).toBe("normal");
+	});
+
+	it("still works from normal mode", () => {
+		const t = h(SENTENCE);
+		t.bind("gD", "deleteToEndOfLine");
+		t.bind("g0", "deleteToStartOfLine");
+
+		press(t.cm, "w", "g", "D");
+		expect(t.text()).toBe("alpha \ncharlie");
+	});
+});
