@@ -30,6 +30,17 @@ export default defineConfig(
 	},
 	...obsidianmd.configs.recommended,
 	{
+		files: ['src/**/*.ts'],
+		rules: {
+			// "Vim Tools" is the plugin's name, and Settings and Editor are
+			// Obsidian's own menu names, so none of them is sentence-cased.
+			'obsidianmd/ui/sentence-case': [
+				'warn',
+				{ brands: ['Vim Tools'], ignoreWords: ['Settings', 'Editor'] },
+			],
+		},
+	},
+	{
 		files: ['tests/**/*.ts', 'vitest.config.ts'],
 		rules: {
 			'obsidianmd/prefer-create-el': 'off',
