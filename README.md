@@ -55,7 +55,8 @@ leader, are rewritten to the names the editor uses, so they work.
 ## What it does
 
 - Reads the Vim API Obsidian already exposes, and re-attaches when vim mode is toggled.
-- Keeps every key it maps on a ledger, so disabling the plugin restores stock vim with no reload.
+- Keeps every key it maps on a ledger, so disabling the plugin restores stock vim with no reload,
+  except for built-in keys a script freed with `unmap`, which stay free until Obsidian restarts.
 - Lets motions compose with operators, so `d{motion}` works for your own motions.
 - Shows the vim mode in the status bar.
 - Adds `Select all`, `Copy path` and `Paste as plain text`, which Obsidian offers only in right-click menus.
