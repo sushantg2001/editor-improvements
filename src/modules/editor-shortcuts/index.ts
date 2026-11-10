@@ -40,7 +40,6 @@ const GROUP = {
 export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 	const { app, getVim, settings } = ctx;
 
-	/** Runs an edit, finishing the way vim would: out of visual mode, off the newline. */
 	interface EditOptions {
 		/** Works from a position, not a range; see `apply`. */
 		atCursor?: boolean;
@@ -48,6 +47,7 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 		times?: (count: number, state: EditorState) => number;
 	}
 
+	/** Defines an editing command: it finishes the way vim would, out of visual mode and off the newline. */
 	const edit = (
 		id: string,
 		name: string,
