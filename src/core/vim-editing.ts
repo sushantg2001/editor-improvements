@@ -80,15 +80,28 @@ export function moveRange(
  * does take up a selection set once its key handling is over, which is what a
  * mouse selection is, so inside a vim key the change is deferred to just after
  * it. From the palette there is no key handling to wait out and it is applied
- * at once.
+ * at once. A deferred selection is dropped if the document changes before it
+ * can be applied.
  */
 export function placeSelection(
 	view: EditorView,
 	cm: CodeMirrorShim,
 	selection: EditorSelection,
 ): void {
+	const scheduled = view.state.doc;
 	const apply = (): void => {
-		view.dispatch({ selection, scrollIntoView: true });
+		// Several commands can run in one go, as in a macro or a mapping, and the
+		// ones after this may have changed the text. The selection was worked out
+		// for text that is gone, and applying it would land in the wrong place or
+		// outside the document.
+		if (view.state.doc !== scheduled) {
+			return;
+		}
+		try {
+			view.dispatch({ selection, scrollIntoView: true });
+		} catch {
+			// The editor was closed in the meantime.
+		}
 	};
 	if (cm.curOp?.isVimOp) {
 		queueMicrotask(apply);
