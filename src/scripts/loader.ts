@@ -171,6 +171,8 @@ export class ScriptHost extends Component {
 			}
 		}
 
+		this.dropBindingsToMissingActions(applied, pending, errors);
+
 		this.options.registry.batch(() => {
 			this.removeApplied();
 			for (const [source, contribution] of applied) {
@@ -182,6 +184,39 @@ export class ScriptHost extends Component {
 		this.lastResult = { loaded, errors };
 		this.reportErrors(errors);
 		return this.lastResult;
+	}
+
+	/**
+	 * `vim.bind` names an action outright, so a name nothing defines is a typo.
+	 * Left in, it would still map the key, to a command that does nothing, and
+	 * take the key from whatever it meant before. The binding is dropped and the
+	 * script told. Scripts run in order, so the check waits until all of them
+	 * have declared their actions.
+	 */
+	private dropBindingsToMissingActions(
+		applied: [ActionSource, Contribution][],
+		declared: Map<string, VimActionKind>,
+		errors: ScriptError[],
+	): void {
+		const { registry } = this.options;
+		const exists = (id: string): boolean =>
+			declared.has(id) || (registry.has(id) && !registry.sourceOf(id)?.startsWith("script:"));
+		for (const entry of applied) {
+			const [source, contribution] = entry;
+			const bindings = contribution.bindings ?? [];
+			const missing = bindings.filter((b) => b.target.kind === "action" && !exists(b.target.id));
+			if (missing.length === 0) {
+				continue;
+			}
+			for (const binding of missing) {
+				const id = binding.target.kind === "action" ? binding.target.id : "";
+				errors.push({
+					file: source.slice("script:".length),
+					message: `Binding "${binding.keys}": there is no action called "${id}". Check the spelling, or define it with vim.action.`,
+				});
+			}
+			entry[1] = { ...contribution, bindings: bindings.filter((b) => !missing.includes(b)) };
+		}
 	}
 
 	private removeApplied(): void {
