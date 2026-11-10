@@ -27,19 +27,34 @@ async function run(code: string) {
  * `<anonymous>:line:column` with no function name. The script below takes its
  * own real position and throws an error whose stack is written the second way.
  */
-const THROW_IN_OTHER_FORM = [
+const throwInOtherForm = (shift: number) => [
 	`const real = new Error("probe").stack.split("\\n").find((f) => /anonymous/.test(f));`,
 	`const [, row, col] = /:(\\d+):(\\d+)\\)?\\s*$/.exec(real);`,
 	`const error = new Error("other host");`,
-	`error.stack = "Error: other host\\n    at plugin (main.js:1:1)\\n    at eval (eval at <anonymous> (main.js:1:1), <anonymous>:" + row + ":" + col + ")";`,
+	`error.stack = "Error: other host\\n    at plugin (main.js:1:1)\\n    at eval (eval at <anonymous> (main.js:1:1), <anonymous>:" + (Number(row) + (${shift})) + ":" + col + ")";`,
 	`throw error;`,
 ].join(" ");
 
 describe("a script frame in the form some hosts use", () => {
 	it("names the line from a frame located in <anonymous>", async () => {
-		const error = await run(`\n\n${THROW_IN_OTHER_FORM}`);
+		const error = await run(`\n\n${throwInOtherForm(0)}`);
 
 		expect(error).toMatchObject({ message: "other host", line: 3 });
+	});
+
+	it("gives no line for a frame in the code wrapped around the script", async () => {
+		// Written at script line 3, shifted up by 3: the wrapper's last line, 0 in the script.
+		const error = await run(`\n\n${throwInOtherForm(-3)}`);
+
+		expect(error?.message).toBe("other host");
+		expect(error?.line).toBeUndefined();
+	});
+
+	it("gives no line for a frame above the script", async () => {
+		const error = await run(`\n\n${throwInOtherForm(-9)}`);
+
+		expect(error?.message).toBe("other host");
+		expect(error?.line).toBeUndefined();
 	});
 
 	it("ignores a plugin frame with the same shape of position", async () => {
