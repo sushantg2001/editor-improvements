@@ -1,5 +1,5 @@
 import { Component, Notice, normalizePath } from "obsidian";
-import type { App, DataAdapter } from "obsidian";
+import type { App, DataAdapter, EventRef } from "obsidian";
 
 import { createScriptApi } from "./api";
 import { TYPINGS, TYPINGS_FILENAME } from "./typings";
@@ -342,6 +342,15 @@ export class ScriptHost extends Component {
 		};
 
 		const { vault } = this.options.app;
+		// The vault keeps out anything under a folder whose name starts with a dot,
+		// and `.obsidian` is one, so for the default scripts folder it reports no
+		// modify, create, delete or rename at all. `raw` reports every path the file
+		// watcher sees, hidden or not; Obsidian itself uses it for hotkeys.json and
+		// CSS snippets. It is not in the public typings.
+		const hidden = vault as unknown as {
+			on(name: "raw", callback: (path: string) => unknown): EventRef;
+		};
+		this.registerEvent(hidden.on("raw", (path) => maybeReload(path)));
 		this.registerEvent(vault.on("modify", (file) => maybeReload(file.path)));
 		this.registerEvent(vault.on("create", (file) => maybeReload(file.path)));
 		this.registerEvent(vault.on("delete", (file) => maybeReload(file.path)));
