@@ -69,6 +69,14 @@ All are motions.
 | `insertCursorAbove` / `insertCursorBelow` | Starts a visual block, or grows it by a line |
 | `addCursorsToSelectionEnds` | Visual block over the selected lines, then `A`: type once, it lands on every line |
 
+#### Selections in macros and mappings
+
+The selection commands (`selectWordOrNextOccurrence`, `selectToNextWord`, the `expandSelectionTo…` family and
+`selectLine` in insert mode) take effect when the key that ran them has finished, because vim only notices a
+selection made after that. Typed by hand that is instant. Inside a macro, a mapping or a dot repeat the next key runs
+first and does not see the selection, so `gn` followed by `d` in a macro does not delete the word. Use vim's own
+text objects there (`viw`, `vi(`).
+
 #### Multiple cursors
 
 Vim keeps one selection, so "add a cursor" cannot mean what it does elsewhere. The block commands give you vim's own
