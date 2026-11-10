@@ -166,7 +166,8 @@ export function findEnclosures(
 }
 
 function bracketEnclosures(text: string, from: number, to: number): Enclosure[] {
-	const found: Enclosure[] = [];
+	// The openers around the selection that nothing before it closes, nearest first.
+	const openers: number[] = [];
 	const pending: string[] = [];
 	for (let i = from - 1; i >= 0; i--) {
 		const char = text.charAt(i);
@@ -180,34 +181,42 @@ function bracketEnclosures(text: string, from: number, to: number): Enclosure[] 
 		}
 		if (pending[pending.length - 1] === closer) {
 			pending.pop();
-			continue;
-		}
-		const close = matchingCloser(text, i, to);
-		if (close !== -1) {
-			found.push({ open: i, close });
+		} else {
+			openers.push(i);
 		}
 	}
-	return found;
-}
 
-/** The closer that matches the opener at `open`, if it lies at or after `from`. */
-function matchingCloser(text: string, open: number, from: number): number {
-	const stack: string[] = [];
-	for (let i = open; i < text.length; i++) {
+	// The closers after it that nothing after it opens, nearest first.
+	const closers: number[] = [];
+	const expected: string[] = [];
+	for (let i = to; i < text.length; i++) {
 		const char = text.charAt(i);
 		const closer = BRACKETS[char];
 		if (closer !== undefined) {
-			stack.push(closer);
+			expected.push(closer);
 		} else if (CLOSERS.has(char)) {
-			if (stack.pop() !== char) {
-				return -1;
-			}
-			if (stack.length === 0) {
-				return i >= from ? i : -1;
+			if (expected[expected.length - 1] === char) {
+				expected.pop();
+			} else {
+				closers.push(i);
 			}
 		}
 	}
-	return -1;
+
+	// The nearest unclosed opener goes with the nearest unopened closer, the next
+	// with the next, for as long as they are of the same kind. Two passes over
+	// the text, however many brackets are unmatched: looking for each opener's
+	// partner separately took time quadratic in the number of them.
+	const found: Enclosure[] = [];
+	for (let k = 0; k < Math.min(openers.length, closers.length); k++) {
+		const open = openers[k] ?? 0;
+		const close = closers[k] ?? 0;
+		if (BRACKETS[text.charAt(open)] !== text.charAt(close)) {
+			break;
+		}
+		found.push({ open, close });
+	}
+	return found;
 }
 
 function quoteEnclosures(text: string, from: number, to: number): Enclosure[] {
