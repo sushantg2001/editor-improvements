@@ -221,7 +221,15 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 	return { actions };
 }
 
-/** The editor state with the selection collapsed to where vim's cursor is. */
+/**
+ * The editor state with the selection collapsed to where vim's cursor is.
+ *
+ * In linewise visual mode Obsidian's vim recomputes `vim.sel` from the
+ * CodeMirror selection each time it updates it, and that selection runs to the
+ * end of the line, so the cursor's column is gone and `vim.sel.head` is the
+ * line's last character. The npm package keeps the column. Either way this is
+ * where vim itself says the cursor is, which is what the user is shown.
+ */
 function stateAtVimCursor(c: VimContext): EditorState {
 	const { state } = c.view;
 	const head = c.cm.state.vim?.sel?.head;
