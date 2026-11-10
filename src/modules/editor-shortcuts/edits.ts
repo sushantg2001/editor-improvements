@@ -116,33 +116,53 @@ export function insertLineAbove(env: EditEnv): Edit {
 
 /* ---------------------------------------------------------------- delete */
 
-export const deleteLine: Edit = (state) =>
-	state.changeByRange((range) => {
-		const { doc } = state;
-		const { first, last } = lineSpan(state, range);
-		const col = column(state, range.head);
-
-		if (last.number === doc.lines) {
-			// Nothing follows, so take the newline before the block instead.
-			if (first.number === 1) {
-				return {
-					changes: { from: first.from, to: last.to },
-					range: EditorSelection.cursor(0),
-				};
+/**
+ * Deletes the lines the selection touches, each once.
+ *
+ * Ranges on neighbouring lines go as one block. Worked out one range at a time
+ * they overlap at the end of the document: the last line takes the newline
+ * before it, which the range above it has already taken or left behind.
+ */
+export const deleteLine: Edit = (state) => {
+	const { doc } = state;
+	const spans = state.selection.ranges.map((range) => lineSpan(state, range));
+	const blocks: { first: Line; last: Line }[] = [];
+	for (const span of [...spans].sort((a, b) => a.first.number - b.first.number)) {
+		const block = blocks[blocks.length - 1];
+		if (block && span.first.number <= block.last.number + 1) {
+			if (span.last.number > block.last.number) {
+				block.last = span.last;
 			}
-			const previous = doc.line(first.number - 1);
-			return {
-				changes: { from: previous.to, to: last.to },
-				range: EditorSelection.cursor(offsetAtColumn(previous, col)),
-			};
+		} else {
+			blocks.push({ ...span });
 		}
+	}
 
-		const following = doc.line(last.number + 1);
-		return {
-			changes: { from: first.from, to: last.to + 1 },
-			range: EditorSelection.cursor(offsetAtColumn({ from: first.from, text: following.text }, col)),
-		};
+	const changes = state.changes(
+		blocks.map(({ first, last }) =>
+			last.number < doc.lines
+				? { from: first.from, to: last.to + 1 }
+				: // Nothing follows, so take the newline before the block instead.
+					{ from: first.number === 1 ? 0 : doc.line(first.number - 1).to, to: last.to },
+		),
+	);
+
+	// Each cursor goes to the same column on the line that takes the block's place.
+	const cursors = state.selection.ranges.map((range, index) => {
+		const line = spans[index]!.first.number;
+		const block = blocks.find((b) => line >= b.first.number && line <= b.last.number)!;
+		const col = column(state, range.head);
+		let target = 0;
+		if (block.last.number < doc.lines) {
+			target = offsetAtColumn(doc.line(block.last.number + 1), col);
+		} else if (block.first.number > 1) {
+			target = offsetAtColumn(doc.line(block.first.number - 1), col);
+		}
+		return EditorSelection.cursor(changes.mapPos(target, 1));
 	});
+
+	return { changes, selection: EditorSelection.create(cursors, state.selection.mainIndex) };
+};
 
 export const deleteToStartOfLine: Edit = (state) =>
 	state.changeByRange((range) => {
