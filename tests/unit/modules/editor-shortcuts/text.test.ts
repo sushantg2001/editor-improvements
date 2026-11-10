@@ -171,4 +171,41 @@ describe("findEnclosures", () => {
 	it("finds nothing outside any delimiter", () => {
 		expect(findEnclosures("plain text", 3, 3, "both")).toEqual([]);
 	});
+
+	it("finds the pairs that are there when others are unbalanced", () => {
+		const text = "f(a [b c] d";
+		const from = text.indexOf("c");
+
+		const found = findEnclosures(text, from, from, "brackets");
+
+		expect(found.map((e) => text.slice(e.open, e.close + 1))).toEqual(["[b c]"]);
+	});
+
+	it("pairs only brackets of the same kind", () => {
+		expect(findEnclosures("(x]", 1, 1, "brackets")).toEqual([]);
+		expect(findEnclosures("{x)", 1, 1, "brackets")).toEqual([]);
+	});
+
+	it("stops at the first mismatch, however far out the next pair would be", () => {
+		const text = "( [ x ) ]";
+		const from = text.indexOf("x");
+
+		const found = findEnclosures(text, from, from, "brackets");
+
+		// The nearest opener is "[" but the nearest closer is ")", so nothing encloses x.
+		expect(found).toEqual([]);
+	});
+
+	it("does not slow down with the number of unmatched brackets", () => {
+		// Looking for each opener's partner separately took time quadratic in the
+		// number of unmatched openers: about 900 ms for twenty thousand.
+		const text = "(".repeat(20000) + "x";
+
+		const started = performance.now();
+		const found = findEnclosures(text, text.length - 1, text.length - 1, "brackets");
+		const took = performance.now() - started;
+
+		expect(found).toEqual([]);
+		expect(took).toBeLessThan(200);
+	});
 });
