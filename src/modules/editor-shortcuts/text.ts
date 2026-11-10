@@ -1,4 +1,4 @@
-import { CharCategory } from "@codemirror/state";
+import { CharCategory, findClusterBreak } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
 
 /** Pure text helpers. Nothing here knows about editors or vim. */
@@ -8,6 +8,20 @@ const LOWERCASE_ARTICLES = new Set(["the", "a", "an"]);
 
 export function isWordChar(char: string): boolean {
 	return char.length > 0 && WORD_CHAR.test(char);
+}
+
+/**
+ * The offset on `line` at `column`, or at the line's end if it is shorter.
+ *
+ * A column counts UTF-16 units, so the same column on another line can fall
+ * inside an emoji or between a letter and its accent. The cursor goes to the
+ * start of that character instead, as it would if it had been moved there.
+ */
+export function offsetAtColumn(line: { from: number; text: string }, column: number): number {
+	if (column >= line.text.length) {
+		return line.from + line.text.length;
+	}
+	return line.from + findClusterBreak(line.text, column + 1, false);
 }
 
 /** The word touching `column` in `text`, as `[from, to)` columns. Empty when none. */
