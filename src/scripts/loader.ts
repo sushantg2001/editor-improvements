@@ -303,7 +303,13 @@ export class ScriptHost extends Component {
 		}
 		guarded.seal();
 
-		const problems = validateContribution(contribution);
+		let problems: string[];
+		try {
+			problems = validateContribution(contribution);
+		} catch (error) {
+			// One script's mistake must not stop the others from loading.
+			problems = [describe(error)];
+		}
 		if (problems.length > 0) {
 			return { error: { file, message: problems.join("\n") } };
 		}

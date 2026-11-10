@@ -18,8 +18,9 @@ export function validateContribution(contribution: Contribution): string[] {
 	const seen = new Set<string>();
 
 	for (const action of contribution.actions ?? []) {
-		const label = `action "${action.id}"`;
-		if (!ACTION_ID.test(action.id)) {
+		// Scripts are JavaScript, so any of these can be the wrong type.
+		const label = `action ${JSON.stringify(action.id)}`;
+		if (typeof action.id !== "string" || !ACTION_ID.test(action.id)) {
 			problems.push(
 				`${label}: ids start with a letter and use only letters, digits, "_" and "-"`,
 			);
@@ -28,11 +29,14 @@ export function validateContribution(contribution: Contribution): string[] {
 			problems.push(`${label}: defined more than once`);
 		}
 		seen.add(action.id);
-		if (!action.name.trim()) {
+		if (typeof action.name !== "string" || !action.name.trim()) {
 			problems.push(`${label}: needs a name for the command palette`);
 		}
-		if (!action.group.trim()) {
+		if (typeof action.group !== "string" || !action.group.trim()) {
 			problems.push(`${label}: needs a group for the command palette`);
+		}
+		if (![undefined, "insert", "normal"].includes(action.resultMode)) {
+			problems.push(`${label}: resultMode is "insert" or "normal"`);
 		}
 		if (!KINDS.has(action.kind)) {
 			problems.push(`${label}: unknown kind "${String(action.kind)}"`);

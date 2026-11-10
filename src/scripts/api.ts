@@ -102,11 +102,12 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		kind: VimActionDef["kind"],
 		id: string,
 		run: ScriptRun,
-		options: DefineOptions = {},
+		given: DefineOptions | null = {},
 	): void => {
 		if (!id) {
 			throw new Error("An action needs an id");
 		}
+		const options = given ?? {};
 		actions.push({
 			id,
 			name: options.name ?? id,
@@ -130,6 +131,11 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		contexts: BindingContext[],
 		recursive: boolean,
 	): void => {
+		if (typeof keys !== "string" || typeof rhs !== "string") {
+			throw new Error(
+				`A mapping needs keys and a right-hand side, both strings (got ${typeof keys} and ${typeof rhs})`,
+			);
+		}
 		// A right-hand side naming a known action binds to it; anything else is
 		// handed to vim as an ordinary remap. That keeps both
 		// `nmap("<leader>d", "myAction")` and `nmap("H", "^")` doing the
@@ -164,6 +170,11 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		onoremap: (keys, rhs) => addMap(keys, rhs, ["operatorPending"], false),
 
 		bind: (keys, actionId, contexts = ["normal"]) => {
+			if (typeof keys !== "string" || typeof actionId !== "string") {
+				throw new Error(
+					`vim.bind needs keys and an action id, both strings (got ${typeof keys} and ${typeof actionId})`,
+				);
+			}
 			bindings.push({
 				keys: expandLeader(keys, leader),
 				contexts,
