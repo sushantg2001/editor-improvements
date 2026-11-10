@@ -176,6 +176,11 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		},
 
 		leader: (key) => {
+			// An empty or missing leader would turn every `<leader>x` into a plain `x`
+			// and map over a built-in key without saying so.
+			if (typeof key !== "string" || key.length === 0) {
+				throw new Error('vim.leader needs a key, such as " " or ","');
+			}
 			leader = key;
 		},
 
@@ -210,5 +215,6 @@ export function createScriptApi(deps: ScriptApiDeps): {
 
 /** Replaces `<leader>` with the configured prefix, as vim does at map time. */
 export function expandLeader(keys: string, leader: string): string {
-	return keys.replace(/<leader>/gi, leader);
+	// A function, so that `$` in the leader is a key and not a replacement pattern.
+	return keys.replace(/<leader>/gi, () => leader);
 }
