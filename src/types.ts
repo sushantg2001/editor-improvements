@@ -63,8 +63,14 @@ export interface ExParams {
 }
 
 /**
- * The subset of `window.CodeMirrorAdapter.Vim` we rely on. Verified against the
- * `@replit/codemirror-vim` copy bundled in Obsidian 1.12.x.
+ * The subset of `window.CodeMirrorAdapter.Vim` we rely on.
+ *
+ * Obsidian ships its own copy (`lib/codemirror/vim.js` in the app), a fork of
+ * the code `@replit/codemirror-vim` is built on; the tests run against the npm
+ * package. The two agree on everything used here, which was checked by running
+ * the whole suite against Obsidian's copy: all but three expectations passed,
+ * and those three are the visual-line cursor described at `stateAtVimCursor`
+ * and a `gv` after the selected lines were deleted.
  */
 export interface VimApi {
 	map(lhs: string, rhs: string, context?: string): void;
