@@ -122,7 +122,24 @@ export class ScriptHost extends Component {
 
 	private async runReload(): Promise<ScriptLoadResult> {
 		const enabled = this.options.isEnabled();
-		const files = enabled ? await this.listScripts() : [];
+		let files: string[] = [];
+		if (enabled) {
+			try {
+				files = await this.listScripts();
+			} catch (error) {
+				// A folder that is not a folder, or one a sync client is holding. What is
+				// running stays running: dropping every script for a failed listing would
+				// be worse than the failure, and nothing here may reject, because callers
+				// fire a reload and forget it.
+				const failed: ScriptError = {
+					file: this.folder,
+					message: `Could not read the scripts folder: ${describe(error)}`,
+				};
+				this.lastResult = { loaded: this.lastResult.loaded, errors: [failed] };
+				this.reportErrors([failed]);
+				return this.lastResult;
+			}
+		}
 		if (enabled) {
 			await this.syncTypings();
 		}
