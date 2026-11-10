@@ -13,7 +13,7 @@ import type {
 } from "../types";
 
 /** Prefix for every name we define on the vim side, to avoid collisions. */
-const STUB_PREFIX = "vimTools_";
+const STUB_PREFIX = "editorImprovements_";
 
 export function stubName(id: string): string {
 	return STUB_PREFIX + id.replace(/[^A-Za-z0-9]/g, "_");
@@ -82,7 +82,7 @@ export class VimDispatcher {
 		}
 		const ctx = cm ? this.buildContext(cm) : null;
 		if (!ctx && def.needsEditor !== false) {
-			new Notice("Vim Tools: no active editor.");
+			new Notice("Editor Improvements: no active editor.");
 			return;
 		}
 		// An action that opted out of needing an editor still runs when there
@@ -192,7 +192,7 @@ export class VimDispatcher {
 	private report(id: string, error: unknown): void {
 		const source = this.registry.sourceOf(id) ?? "unknown";
 		const message = error instanceof Error ? error.message : String(error);
-		new Notice(`Vim Tools: "${id}" failed (${source})\n${message}`, 8000);
+		new Notice(`Editor Improvements: "${id}" failed (${source})\n${message}`, 8000);
 	}
 }
 

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "vim-tools",
+      "name": "editor-improvements",
       "devDependencies": {
         "@codemirror/state": "^6.5.2",
         "@codemirror/view": "^6.36.4",

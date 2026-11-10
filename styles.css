@@ -1,25 +1,25 @@
-.vim-tools-mode {
+.editor-improvements-mode {
 	font-family: var(--font-monospace);
 	font-size: var(--font-ui-smaller);
 	letter-spacing: 0.05em;
 }
 
-.vim-tools-mode.is-hidden {
+.editor-improvements-mode.is-hidden {
 	display: none;
 }
 
-.vim-tools-mode.vt-mode-normal {
+.editor-improvements-mode.ei-mode-normal {
 	color: var(--text-muted);
 }
 
-.vim-tools-mode.vt-mode-insert {
+.editor-improvements-mode.ei-mode-insert {
 	color: var(--color-green);
 }
 
-.vim-tools-mode.vt-mode-visual {
+.editor-improvements-mode.ei-mode-visual {
 	color: var(--color-yellow);
 }
 
-.vim-tools-mode.vt-mode-replace {
+.editor-improvements-mode.ei-mode-replace {
 	color: var(--color-red);
 }

@@ -1,13 +1,13 @@
 import { MODE_CLASS_PREFIX, VIM_MODES } from "../constants";
-import type { VimMode, VimToolsSettings } from "../types";
+import type { VimMode, EditorImprovementsSettings } from "../types";
 
 /** Status bar item showing the current vim mode. */
 export class ModeStatusBar {
 	constructor(
 		private readonly el: HTMLElement,
-		private getSettings: () => VimToolsSettings,
+		private getSettings: () => EditorImprovementsSettings,
 	) {
-		this.el.addClass("vim-tools-mode");
+		this.el.addClass("editor-improvements-mode");
 		// The label is often a bare glyph, so screen readers need the context.
 		this.el.setAttribute("role", "status");
 	}

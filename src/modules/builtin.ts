@@ -50,7 +50,7 @@ export function builtinContribution({ app, getVim }: BuiltinDeps): Contribution 
 				run: async () => {
 					const file = app.workspace.getActiveFile();
 					if (!file) {
-						new Notice("Vim Tools: no active file.");
+						new Notice("Editor Improvements: no active file.");
 						return;
 					}
 					await navigator.clipboard.writeText(file.path);

@@ -7,15 +7,15 @@ import {
 	SCRIPTS_FOLDER_NAME,
 	VIM_MODES,
 } from "./constants";
-import type { VimToolsSettings } from "./types";
-import type VimToolsPlugin from "./main";
+import type { EditorImprovementsSettings } from "./types";
+import type EditorImprovementsPlugin from "./main";
 
 /**
  * Where scripts live, honouring a custom config directory.
  *
  * `.obsidian` is only the default; `vault.configDir` is the truth.
  */
-export function resolveScriptsFolder(app: App, settings: VimToolsSettings): string {
+export function resolveScriptsFolder(app: App, settings: EditorImprovementsSettings): string {
 	const configured = settings.scriptsFolder.trim();
 	if (configured) {
 		return normalizePath(configured);
@@ -23,8 +23,8 @@ export function resolveScriptsFolder(app: App, settings: VimToolsSettings): stri
 	return normalizePath(`${app.vault.configDir}/${SCRIPTS_FOLDER_NAME}`);
 }
 
-export function mergeSettings(data: unknown): VimToolsSettings {
-	const stored = (data ?? {}) as Partial<VimToolsSettings>;
+export function mergeSettings(data: unknown): EditorImprovementsSettings {
+	const stored = (data ?? {}) as Partial<EditorImprovementsSettings>;
 	return {
 		...DEFAULT_SETTINGS,
 		...stored,
@@ -32,10 +32,10 @@ export function mergeSettings(data: unknown): VimToolsSettings {
 	};
 }
 
-export class VimToolsSettingTab extends PluginSettingTab {
+export class EditorImprovementsSettingTab extends PluginSettingTab {
 	constructor(
 		app: App,
-		private plugin: VimToolsPlugin,
+		private plugin: EditorImprovementsPlugin,
 	) {
 		super(app, plugin);
 	}

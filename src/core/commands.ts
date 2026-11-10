@@ -13,7 +13,7 @@ import type { CodeMirrorShim } from "../types";
  * command of their own and so cannot be bound at all as Obsidian ships.
  *
  * Note that `Plugin.addCommand` force-prefixes ids with the manifest id, so
- * ours are `vim-tools:<id>`. Local names are kept byte-identical to the plugins
+ * ours are `editor-improvements:<id>`. Local names are kept byte-identical to the plugins
  * we replace so migration is a mechanical prefix swap.
  */
 export class CommandSurface {

@@ -3,7 +3,7 @@ import type { App } from "obsidian";
 
 import { TYPINGS, TYPINGS_FILENAME } from "./typings";
 
-const STARTER_INIT = `// Vim Tools configuration. Reloads automatically when you save.
+const STARTER_INIT = `// Editor Improvements configuration. Reloads automatically when you save.
 //
 // Everything here runs as ordinary JavaScript with full access to your vault,
 // so treat it the way you would any other script you execute.
@@ -48,13 +48,13 @@ export async function scaffoldScripts(app: App, folder: string): Promise<void> {
 
 		const initPath = normalizePath(`${folder}/init.js`);
 		if (await adapter.exists(initPath)) {
-			new Notice(`Vim Tools: ${folder} already has an init.js — left as is.`);
+			new Notice(`Editor Improvements: ${folder} already has an init.js — left as is.`);
 			return;
 		}
 		await adapter.write(initPath, STARTER_INIT);
-		new Notice(`Vim Tools: created ${initPath}`);
+		new Notice(`Editor Improvements: created ${initPath}`);
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
-		new Notice(`Vim Tools: could not create ${folder}\n${message}`, 8000);
+		new Notice(`Editor Improvements: could not create ${folder}\n${message}`, 8000);
 	}
 }

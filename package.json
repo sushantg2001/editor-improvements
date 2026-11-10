@@ -1,5 +1,5 @@
 {
-	"name": "vim-tools",
+	"name": "editor-improvements",
 	"version": "1.0.0",
 	"description": "Neovim-style editing, navigation, and configuration for Obsidian",
 	"main": "main.js",

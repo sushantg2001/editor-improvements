@@ -1,6 +1,6 @@
-import type { VimMode, VimToolsSettings } from "./types";
+import type { VimMode, EditorImprovementsSettings } from "./types";
 
-export const PLUGIN_ID = "vim-tools";
+export const PLUGIN_ID = "editor-improvements";
 
 export const VIM_MODES: VimMode[] = [
 	"normal",
@@ -28,10 +28,10 @@ export const MODE_LABELS: Record<VimMode, string> = {
  * but users can change it, so the parent is always read from
  * `vault.configDir` rather than assumed.
  */
-export const SCRIPTS_FOLDER_NAME = "vim-tools";
+export const SCRIPTS_FOLDER_NAME = "editor-improvements";
 
-/** Empty means "use `<configDir>/vim-tools`" — resolved at runtime. */
-export const DEFAULT_SETTINGS: VimToolsSettings = {
+/** Empty means "use `<configDir>/editor-improvements`" — resolved at runtime. */
+export const DEFAULT_SETTINGS: EditorImprovementsSettings = {
 	showModeInStatusBar: true,
 	scriptsEnabled: false,
 	scriptsFolder: "",
@@ -46,5 +46,5 @@ export const DEFAULT_SETTINGS: VimToolsSettings = {
 	},
 };
 
-/** CSS class placed on the status bar item, and on the editor root as `vt-mode-<mode>`. */
-export const MODE_CLASS_PREFIX = "vt-mode-";
+/** CSS class placed on the status bar item, and on the editor root as `ei-mode-<mode>`. */
+export const MODE_CLASS_PREFIX = "ei-mode-";

@@ -1,4 +1,4 @@
-# Vim Tools
+# Editor Improvements
 
 Neovim-style editing, navigation and configuration for Obsidian, built on the CodeMirror Vim mode Obsidian already
 bundles.
@@ -22,14 +22,14 @@ A working Neovim setup in Obsidian today means stacking four ageing plugins — 
 - **Some things can't be bound at all.** *Select all*, *Copy path* and *Paste as plain text* exist only as
   right-click menu items. Obsidian registers no command for them, so there is no hotkey to assign.
 
-Vim Tools replaces all four with one plugin that talks to the Vim API directly.
+Editor Improvements replaces all four with one plugin that talks to the Vim API directly.
 
 ## Principle: prefer what CodeMirror already does
 
 Obsidian bundles the full [`@replit/codemirror-vim`][cmvim], unminified. Operators, motions, text objects, counts,
 registers, macros, marks, `.` repeat, search, `:s`, `:g`, `:sort`, folds and `langmap` all already work.
 
-Vim Tools reimplements none of it. It fills what vim genuinely lacks *in Obsidian*:
+Editor Improvements reimplements none of it. It fills what vim genuinely lacks *in Obsidian*:
 
 | Gap | Filled with |
 |---|---|
@@ -81,15 +81,15 @@ already bindable.
 
 ## Configuration
 
-Configuration is JavaScript, not a vimrc. Scripts live in `<config-dir>/vim-tools/` (`.obsidian/vim-tools` unless
+Configuration is JavaScript, not a vimrc. Scripts live in `<config-dir>/editor-improvements/` (`.obsidian/editor-improvements` unless
 you renamed your config folder), with `init.js` loaded first and the rest in lexical order, the way Neovim loads
 `plugin/`.
 
-Run **Vim Tools: Create scripts folder with a starter init.js** from the palette to get a commented starting point
-plus a `vim-tools.d.ts` for editor autocomplete, then enable scripts in settings.
+Run **Editor Improvements: Create scripts folder with a starter init.js** from the palette to get a commented starting point
+plus an `editor-improvements.d.ts` for editor autocomplete, then enable scripts in settings.
 
 ```js
-// .obsidian/vim-tools/init.js
+// .obsidian/editor-improvements/init.js
 
 vim.leader(' ');
 
@@ -126,8 +126,8 @@ could not translate rather than guessing.
 Manual, until this is directory-listed:
 
 1. Build (see below), or download `main.js`, `manifest.json` and `styles.css` from a release.
-2. Drop them in `<vault>/.obsidian/plugins/vim-tools/`.
-3. Enable **Vim Tools** in Settings → Community plugins.
+2. Drop them in `<vault>/.obsidian/plugins/editor-improvements/`.
+3. Enable **Editor Improvements** in Settings → Community plugins.
 4. Enable vim mode in **Settings → Editor** — the plugin does nothing without it.
 
 ## Development
@@ -142,7 +142,7 @@ bun run build
 For a live loop against a real vault, point the dev build straight at the plugin folder:
 
 ```bash
-OBSIDIAN_PLUGIN_DIR="/path/to/vault/.obsidian/plugins/vim-tools" bun run dev
+OBSIDIAN_PLUGIN_DIR="/path/to/vault/.obsidian/plugins/editor-improvements" bun run dev
 ```
 
 That writes `main.js` and copies `manifest.json` and `styles.css` on every rebuild.
@@ -157,7 +157,7 @@ Design notes, including the survey of the other vim plugins and the CodeMirror 6
 [**Vim Motions**][motions] is a far more complete plugin in this space — Lua configuration via fengari, a
 Telescope-style picker, oil.nvim, harpoon, snippets, an undo tree. If you want maximum capability today, use that.
 
-Vim Tools is smaller and takes one deliberately different bet: Markdown structure comes from Obsidian's
+Editor Improvements is smaller and takes one deliberately different bet: Markdown structure comes from Obsidian's
 `MetadataCache` rather than regex scanning, which gets fences inside blockquotes, setext headings, aliased
 wikilinks and nested list hierarchy right by construction. It also stays on Obsidian's bundled vim rather than
 shipping a fork.

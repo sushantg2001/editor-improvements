@@ -104,7 +104,7 @@ export interface VimApi {
 	exitVisualMode(cm: CodeMirrorShim, moveHead?: boolean): void;
 }
 
-export interface VimToolsSettings {
+export interface EditorImprovementsSettings {
 	/** Show the current vim mode in the status bar. */
 	showModeInStatusBar: boolean;
 	/** Prompt text per mode, shown in the status bar. */

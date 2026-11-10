@@ -7,7 +7,7 @@ import { ScriptHost } from "../../src/scripts/loader";
 import { App } from "../mocks/obsidian";
 import { makeEditor, press, vimApi } from "./helpers";
 
-const FOLDER = ".obsidian/vim-tools";
+const FOLDER = ".obsidian/editor-improvements";
 
 afterEach(() => {
 	vimApi.mapclear();

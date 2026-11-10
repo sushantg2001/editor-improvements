@@ -1,6 +1,6 @@
 {
-	"id": "vim-tools",
-	"name": "Vim Tools",
+	"id": "editor-improvements",
+	"name": "Editor Improvements",
 	"version": "1.0.0",
 	"minAppVersion": "1.7.2",
 	"description": "Neovim-style editing, navigation, and configuration for Obsidian, built on the bundled CodeMirror Vim mode.",

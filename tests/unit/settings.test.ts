@@ -34,7 +34,7 @@ describe("resolveScriptsFolder", () => {
 	it("defaults to a folder inside the vault's config directory", () => {
 		const app = new App();
 		expect(resolveScriptsFolder(app as never, mergeSettings({}))).toBe(
-			".obsidian/vim-tools",
+			".obsidian/editor-improvements",
 		);
 	});
 
@@ -45,7 +45,7 @@ describe("resolveScriptsFolder", () => {
 		app.vault.configDir = ".my-config";
 
 		expect(resolveScriptsFolder(app as never, mergeSettings({}))).toBe(
-			".my-config/vim-tools",
+			".my-config/editor-improvements",
 		);
 	});
 
@@ -60,6 +60,6 @@ describe("resolveScriptsFolder", () => {
 		const app = new App();
 		const settings = mergeSettings({ scriptsFolder: "   " });
 
-		expect(resolveScriptsFolder(app as never, settings)).toBe(".obsidian/vim-tools");
+		expect(resolveScriptsFolder(app as never, settings)).toBe(".obsidian/editor-improvements");
 	});
 });

@@ -10,36 +10,36 @@ import {
 } from "./core/editor";
 import { ModeTracker } from "./core/modes";
 import { ActionRegistry } from "./core/registry";
-import { VimToolsRuntime } from "./core/runtime";
+import { EditorImprovementsRuntime } from "./core/runtime";
 import { VimBridge, isVimEnabled } from "./core/vim-bridge";
 import { builtinContribution } from "./modules/builtin";
 import { ScriptHost } from "./scripts/loader";
 import { scaffoldScripts } from "./scripts/scaffold";
-import { VimToolsSettingTab, mergeSettings, resolveScriptsFolder } from "./settings";
+import { EditorImprovementsSettingTab, mergeSettings, resolveScriptsFolder } from "./settings";
 import { ModeStatusBar } from "./ui/status-bar";
-import type { CodeMirrorShim, VimContext, VimToolsSettings } from "./types";
+import type { CodeMirrorShim, VimContext, EditorImprovementsSettings } from "./types";
 
 /**
  * Wiring only.
  *
  * Everything the plugin can do lives in the registry as a contribution from
- * some source; `VimToolsRuntime` is the only thing that projects the registry
+ * some source; `EditorImprovementsRuntime` is the only thing that projects the registry
  * onto vim's keymap and Obsidian's commands. This class builds those pieces,
  * hands them to each other, and otherwise stays out of the way.
  */
-export default class VimToolsPlugin extends Plugin {
-	settings!: VimToolsSettings;
+export default class EditorImprovementsPlugin extends Plugin {
+	settings!: EditorImprovementsSettings;
 	registry!: ActionRegistry;
 	bridge!: VimBridge;
 	modes!: ModeTracker;
 	scripts!: ScriptHost;
-	runtime!: VimToolsRuntime;
+	runtime!: EditorImprovementsRuntime;
 
 	private statusBar: ModeStatusBar | null = null;
 
 	async onload(): Promise<void> {
 		this.settings = mergeSettings(await this.loadData());
-		this.addSettingTab(new VimToolsSettingTab(this.app, this));
+		this.addSettingTab(new EditorImprovementsSettingTab(this.app, this));
 
 		this.registry = new ActionRegistry();
 		this.bridge = this.addChild(new VimBridge(this.app));
@@ -70,7 +70,7 @@ export default class VimToolsPlugin extends Plugin {
 		);
 
 		this.runtime = this.addChild(
-			new VimToolsRuntime({
+			new EditorImprovementsRuntime({
 				registry: this.registry,
 				bridge: this.bridge,
 				dispatcher,
@@ -108,8 +108,8 @@ export default class VimToolsPlugin extends Plugin {
 		}
 		new Notice(
 			result.loaded.length > 0
-				? `Vim Tools: loaded ${result.loaded.length} script(s).`
-				: `Vim Tools: no scripts found in ${this.scripts.folder}.`,
+				? `Editor Improvements: loaded ${result.loaded.length} script(s).`
+				: `Editor Improvements: no scripts found in ${this.scripts.folder}.`,
 		);
 	}
 
@@ -129,13 +129,13 @@ export default class VimToolsPlugin extends Plugin {
 			name: "Show status",
 			callback: () => {
 				if (!isVimEnabled(this.app)) {
-					new Notice("Vim Tools: vim mode is off. Enable it in Settings → Editor.");
+					new Notice("Editor Improvements: vim mode is off. Enable it in Settings → Editor.");
 					return;
 				}
 				const { loaded, errors } = this.scripts.result;
 				new Notice(
 					[
-						`Vim Tools: ${this.modes.current} mode`,
+						`Editor Improvements: ${this.modes.current} mode`,
 						`${this.registry.actions().length} actions, ${this.runtime.mappedKeyCount} keys`,
 						this.settings.scriptsEnabled
 							? `${loaded.length} script(s), ${errors.length} error(s)`

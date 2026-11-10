@@ -23,7 +23,7 @@ export interface RuntimeOptions {
  * contribution in the registry and lets this run; nothing applies keys or
  * registers commands on its own.
  */
-export class VimToolsRuntime extends Component {
+export class EditorImprovementsRuntime extends Component {
 	private readonly ledger = new MappingLedger();
 
 	constructor(private readonly options: RuntimeOptions) {
@@ -69,7 +69,7 @@ export class VimToolsRuntime extends Component {
 	private reportConflicts(conflicts: ReturnType<typeof resolveBindings>["conflicts"]): void {
 		for (const conflict of conflicts) {
 			new Notice(
-				`Vim Tools: "${conflict.keys}" (${conflict.context}) claimed by ` +
+				`Editor Improvements: "${conflict.keys}" (${conflict.context}) claimed by ` +
 					`${conflict.sources.join(", ")} — using ${conflict.winner}.`,
 				8000,
 			);

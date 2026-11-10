@@ -13,7 +13,7 @@ if you want to view the source, please visit the github repository of this plugi
 const prod = process.argv[2] === 'production';
 
 // Optional: build straight into a vault so `bun run dev` is a live loop.
-//   OBSIDIAN_PLUGIN_DIR="/path/to/vault/.obsidian/plugins/vim-tools" bun run dev
+//   OBSIDIAN_PLUGIN_DIR="/path/to/vault/.obsidian/plugins/editor-improvements" bun run dev
 const pluginDir = process.env.OBSIDIAN_PLUGIN_DIR;
 const outfile = pluginDir ? join(pluginDir, 'main.js') : 'main.js';
 

@@ -171,7 +171,7 @@ export class ScriptHost extends Component {
 	private reportErrors(errors: ScriptError[]): void {
 		for (const error of errors) {
 			const where = error.line ? `${error.file}:${error.line}` : error.file;
-			new Notice(`Vim Tools — ${where}\n${error.message}`, 10000);
+			new Notice(`Editor Improvements — ${where}\n${error.message}`, 10000);
 		}
 	}
 

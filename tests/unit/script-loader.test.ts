@@ -4,7 +4,7 @@ import { ActionRegistry } from "../../src/core/registry";
 import { ScriptHost } from "../../src/scripts/loader";
 import { App, Notice } from "../mocks/obsidian";
 
-const FOLDER = ".obsidian/vim-tools";
+const FOLDER = ".obsidian/editor-improvements";
 
 function setup(files: Record<string, string>, enabled = true) {
 	const app = new App();
