@@ -42,8 +42,13 @@ export interface LineEdit {
 }
 
 /**
- * Edits that add one to the number of every consecutive ordered item at
- * `indentation`, starting at `lines[startIndex]`.
+ * Edits that add one to the number of every ordered item at `indentation`,
+ * starting at `lines[startIndex]`.
+ *
+ * Blank lines and lines indented further belong to the item above them (its
+ * paragraphs, sub-items and code), so numbering carries on past them. It stops
+ * at a line that is neither: a less indented line, or a paragraph or bullet at
+ * this level.
  */
 export function renumberFrom(
 	lines: { from: number; text: string }[],
@@ -51,11 +56,17 @@ export function renumberFrom(
 	indentation: string,
 ): LineEdit[] {
 	const edits: LineEdit[] = [];
-	const marker = new RegExp(`^${indentation.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\d+)\\.`);
+	const marker = new RegExp(`^${indentation.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\d+)\\.(?= |$)`);
 	for (let i = startIndex; i < lines.length; i++) {
 		const line = lines[i];
-		const match = line ? marker.exec(line.text) : null;
-		if (!line || !match) {
+		if (!line) {
+			break;
+		}
+		if (belongsToItemAbove(line.text, indentation)) {
+			continue;
+		}
+		const match = marker.exec(line.text);
+		if (!match) {
 			break;
 		}
 		const numberStart = line.from + indentation.length;
@@ -67,6 +78,14 @@ export function renumberFrom(
 		});
 	}
 	return edits;
+}
+
+/** True for a blank line, or one indented further than `indentation`. */
+export function belongsToItemAbove(text: string, indentation: string): boolean {
+	if (text.trim().length === 0) {
+		return true;
+	}
+	return text.startsWith(indentation) && /^\s/.test(text.slice(indentation.length));
 }
 
 /** Characters the list marker occupies at the start of `text`, for joining lines. */
