@@ -1,5 +1,5 @@
 import { PluginSettingTab, Setting, normalizePath } from "obsidian";
-import type { App } from "obsidian";
+import type { App, TextComponent } from "obsidian";
 
 import {
 	DEFAULT_SETTINGS,
@@ -67,11 +67,39 @@ function stringOr(value: unknown, fallback: string, nonEmpty = false): string {
 }
 
 export class EditorImprovementsSettingTab extends PluginSettingTab {
+	/** A folder or leader was edited and the scripts have not been run with it yet. */
+	private reloadPending = false;
+
 	constructor(
 		app: App,
 		private plugin: EditorImprovementsPlugin,
 	) {
 		super(app, plugin);
+	}
+
+	/**
+	 * Runs the scripts again with what was typed, once the field is left.
+	 *
+	 * A text field reports every keystroke. Reloading on each would run all the
+	 * scripts again for every character, and the half-typed folder names on the
+	 * way to the real one would be run too: "Scr" is a folder if the vault has
+	 * one, and anything in it ending in .js would execute.
+	 */
+	private reloadWhenCommitted(text: TextComponent): void {
+		text.inputEl.addEventListener("change", () => void this.applyPendingReload());
+	}
+
+	private async applyPendingReload(): Promise<void> {
+		if (!this.reloadPending) {
+			return;
+		}
+		this.reloadPending = false;
+		await this.plugin.reloadScripts();
+	}
+
+	/** Closing the settings without leaving the field still applies what was typed. */
+	override hide(): void {
+		void this.applyPendingReload();
 	}
 
 	display(): void {
@@ -117,30 +145,32 @@ export class EditorImprovementsSettingTab extends PluginSettingTab {
 					`${this.app.vault.configDir}/${SCRIPTS_FOLDER_NAME}. ` +
 					`init.js loads first, then the rest.`,
 			)
-			.addText((text) =>
-				text
+			.addText((text) => {
+				this.reloadWhenCommitted(text);
+				return text
 					.setPlaceholder(`${this.app.vault.configDir}/${SCRIPTS_FOLDER_NAME}`)
 					.setValue(this.plugin.settings.scriptsFolder)
 					.onChange(async (value) => {
 						this.plugin.settings.scriptsFolder = value.trim();
+						this.reloadPending = true;
 						await this.plugin.saveSettings();
-						await this.plugin.reloadScripts();
-					}),
-			);
+					});
+			});
 
 		new Setting(containerEl)
 			.setName("Leader key")
 			.setDesc("What <leader> expands to in mappings. A script may override it.")
-			.addText((text) =>
-				text
+			.addText((text) => {
+				this.reloadWhenCommitted(text);
+				return text
 					.setPlaceholder(DEFAULT_SETTINGS.leader)
 					.setValue(this.plugin.settings.leader)
 					.onChange(async (value) => {
 						this.plugin.settings.leader = value || DEFAULT_SETTINGS.leader;
+						this.reloadPending = true;
 						await this.plugin.saveSettings();
-						await this.plugin.reloadScripts();
-					}),
-			);
+					});
+			});
 
 		new Setting(containerEl).setName("Editing").setHeading();
 
