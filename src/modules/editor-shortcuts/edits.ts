@@ -1,7 +1,7 @@
 import { EditorSelection } from "@codemirror/state";
 import type { ChangeSpec, EditorState, Line, SelectionRange, TransactionSpec } from "@codemirror/state";
 
-import { isOrderedPrefix, listMarkerLength, nextListPrefix, renumberFrom } from "./lists";
+import { belongsToItemAbove, isOrderedPrefix, listMarkerLength, nextListPrefix, renumberFrom } from "./lists";
 import {
 	findEnclosures,
 	findOccurrences,
@@ -48,7 +48,7 @@ function renumberChanges(state: EditorState, fromLine: number, indentation: stri
 	const lines: { from: number; text: string }[] = [];
 	for (let n = fromLine; n <= state.doc.lines; n++) {
 		const line = state.doc.line(n);
-		if (!/^\s*\d+\./.test(line.text)) {
+		if (!belongsToItemAbove(line.text, indentation) && !/^\s*\d+\.(?= |$)/.test(line.text)) {
 			break;
 		}
 		lines.push({ from: line.from, text: line.text });

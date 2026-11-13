@@ -63,10 +63,29 @@ describe("renumberFrom", () => {
 		]);
 	});
 
-	it("stops at the first line that is not an item at that level", () => {
-		const edits = renumberFrom(lines("2. b", "  1. nested", "3. c"), 0, "");
+	it("carries on past a sub-list, which belongs to the item above it", () => {
+		const edits = renumberFrom(lines("2. b", "  1. nested", "  - bullet", "3. c"), 0, "");
 
-		expect(edits).toHaveLength(1);
+		expect(edits).toEqual([
+			{ from: 0, to: 1, insert: "3" },
+			{ from: 28, to: 29, insert: "4" },
+		]);
+	});
+
+	it("carries on past blank lines and the paragraphs of an item", () => {
+		const edits = renumberFrom(lines("2. b", "", "   more text", "3. c"), 0, "");
+
+		expect(edits.map((edit) => edit.insert)).toEqual(["3", "4"]);
+	});
+
+	it("stops at a line that ends the list", () => {
+		expect(renumberFrom(lines("2. b", "plain", "3. c"), 0, "")).toHaveLength(1);
+		expect(renumberFrom(lines("2. b", "- bullet", "3. c"), 0, "")).toHaveLength(1);
+		expect(renumberFrom(lines("  2. b", "3. outer"), 0, "  ")).toHaveLength(1);
+	});
+
+	it("leaves a decimal number at the start of a line alone", () => {
+		expect(renumberFrom(lines("2. b", "3.14 is pi"), 0, "")).toHaveLength(1);
 	});
 
 	it("handles indentation and multi-digit numbers", () => {
