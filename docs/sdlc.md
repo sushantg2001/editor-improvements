@@ -44,9 +44,9 @@ CI does not run on the release PR, because pull requests opened with `GITHUB_TOK
 | Commit types                                     | Version change |
 | ------------------------------------------------ | -------------- |
 | `feat`                                           | minor          |
-| `fix`                                            | patch          |
+| `fix`, `perf`, `revert`                          | patch          |
 | `feat!`, `fix!`, or a `BREAKING CHANGE:` footer  | major          |
-| anything else (`docs`, `test`, `ci`, `chore`, …) | no release     |
+| `docs`, `test`, `refactor`, `style`, `build`, `ci`, `chore` | no release |
 
 The release PR updates the version files listed in `release-please-config.json` and `CHANGELOG.md`.
 

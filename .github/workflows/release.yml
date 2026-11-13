@@ -10,7 +10,8 @@
 # That push starts this workflow: `check` verifies the tag, then `release` waits for your approval
 # (environment "release"), builds, attests, attaches the files and publishes the draft.
 #
-#   feat -> minor, fix -> patch, feat! / BREAKING CHANGE -> major, anything else -> no release.
+#   feat -> minor, fix / perf / revert -> patch, feat! / BREAKING CHANGE -> major,
+#   docs / test / refactor / style / build / ci / chore -> no release.
 #
 # Force a version with a commit whose body has `Release-As: x.y.z`.
 name: Release
