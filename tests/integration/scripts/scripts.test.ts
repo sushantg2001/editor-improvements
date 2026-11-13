@@ -39,7 +39,7 @@ async function runScript(code: string, doc = "alpha\nbravo\ncharlie") {
 
 	const result = await host.reload();
 	const { bindings, conflicts } = resolveBindings(registry);
-	ledger.apply(vimApi, dispatcher, bindings);
+	ledger.apply(vimApi, dispatcher, bindings, registry.unmaps());
 
 	return { ...editor, registry, ledger, result, conflicts, host, app };
 }
@@ -79,10 +79,12 @@ describe("a script configuring real vim", () => {
 	it("expands <leader> so the mapped key is the expanded one", async () => {
 		const { cm, view } = await runScript(`
 			vim.leader(" ");
+			vim.nunmap("<Space>");
 			vim.nnoremap("<leader>d", "dd");
 		`);
 
-		press(cm, " ", "d");
+		// The key arrives as <Space>, as it does from a keyboard.
+		press(cm, "<Space>", "d");
 
 		expect(view.state.doc.toString()).toBe("bravo\ncharlie");
 	});
