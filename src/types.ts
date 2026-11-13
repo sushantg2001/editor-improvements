@@ -106,7 +106,8 @@ export interface VimApi {
 	getRegisterController(): VimRegisterController;
 	handleEx(cm: CodeMirrorShim, input: string): void;
 	handleKey(cm: CodeMirrorShim, key: string, origin?: string): void;
-	setOption(name: string, value: unknown, cm?: CodeMirrorShim): void;
+	/** Returns an Error, rather than throwing one, for an unknown option or a bad value. */
+	setOption(name: string, value: unknown, cm?: CodeMirrorShim): unknown;
 	getOption(name: string, cm?: CodeMirrorShim): unknown;
 	exitInsertMode(cm: CodeMirrorShim): void;
 	exitVisualMode(cm: CodeMirrorShim, moveHead?: boolean): void;

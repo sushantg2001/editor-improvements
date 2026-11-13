@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { MappingLedger, resolveBindings } from "../../../src/core/keymap";
 import { ActionRegistry } from "../../../src/core/registry";
 import { VimDispatcher } from "../../../src/core/dispatch";
+import { createScriptApi } from "../../../src/scripts/api";
 import { ScriptHost } from "../../../src/scripts/loader";
 import { App } from "../../mocks/obsidian";
 import { makeEditor, press, vimApi } from "../../helpers/vim";
@@ -162,5 +163,33 @@ describe("a script configuring real vim", () => {
 
 		// `yy` yanks rather than deletes, so the document is untouched.
 		expect(view.state.doc.toString()).toBe("alpha\nbravo\ncharlie");
+	});
+});
+
+describe("vim.set against the real Vim API", () => {
+	const api = () =>
+		createScriptApi({
+			app: new App() as never,
+			getVim: () => vimApi,
+			leader: "\\",
+			knowsAction: () => false,
+		}).api;
+
+	it("refuses an option that does not exist instead of silently doing nothing", () => {
+		// vim.setOption returns an Error for a name it does not know; it does not throw.
+		expect(() => api().set("notAnOption", 1)).toThrow(/Unknown option: notAnOption/);
+	});
+
+	it("accepts an option vim does have", () => {
+		vimApi.defineOption("probeopt", 0, "number");
+
+		expect(() => api().set("probeopt", 5)).not.toThrow();
+		expect(vimApi.getOption("probeopt")).toBe(5);
+	});
+
+	it("reports a value of the wrong type", () => {
+		vimApi.defineOption("probebool", false, "boolean");
+
+		expect(() => api().set("probebool", "not a boolean")).toThrow();
 	});
 });
