@@ -276,7 +276,7 @@ export class ScriptHost extends Component {
 		const listing = await this.adapter.list(folder);
 		const names = listing.files
 			.map((path) => path.slice(path.lastIndexOf("/") + 1))
-			.filter((name) => name.endsWith(".js"))
+			.filter(isScriptName)
 			// By character code, not locale: the order decides which script wins a conflict,
 			// and a synced vault must run its scripts in the same order on every device.
 			.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
@@ -345,7 +345,7 @@ export class ScriptHost extends Component {
 	private watchFolder(): void {
 		const maybeReload = (path: string): void => {
 			// With the separator, so a sibling folder such as `editor-improvements-old` is not ours.
-			if (!path.startsWith(`${this.folder}/`) || !path.endsWith(".js")) {
+			if (!path.startsWith(`${this.folder}/`) || !isScriptName(path.slice(path.lastIndexOf("/") + 1))) {
 				return;
 			}
 			// Editors often write in bursts; collapse them into one reload.
@@ -441,6 +441,16 @@ function sealAfterRun(api: ScriptApi, file: string): { api: ScriptApi; seal: () 
 		},
 	});
 	return { api: guarded, seal: () => (sealed = true) };
+}
+
+/**
+ * A script is a `.js` file that is not hidden. Hidden ones are not meant to be
+ * run: macOS writes `._init.js` beside `init.js` on a network or exFAT volume
+ * (binary, so a syntax error on every reload) and Emacs leaves `.#init.js`, a
+ * dangling link, while a file is open.
+ */
+function isScriptName(name: string): boolean {
+	return name.endsWith(".js") && !name.startsWith(".");
 }
 
 export function sourceOf(file: string): ActionSource {
