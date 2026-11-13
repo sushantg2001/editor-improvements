@@ -69,6 +69,21 @@ export function validateContribution(contribution: Contribution): string[] {
 		if (problem) {
 			problems.push(`unmap "${unmap.keys}": ${problem}`);
 		}
+		// Left out means every context. Anything else must be a list of them: a
+		// string would be walked one letter at a time and free nothing, and an
+		// empty list frees nothing either.
+		const { contexts } = unmap;
+		if (contexts !== undefined) {
+			if (!Array.isArray(contexts) || contexts.length === 0) {
+				problems.push(`unmap "${unmap.keys}": contexts is a non-empty list such as ["normal"], or left out for every context`);
+			} else {
+				for (const context of contexts) {
+					if (!CONTEXTS.has(context)) {
+						problems.push(`unmap "${unmap.keys}": unknown context "${String(context)}"`);
+					}
+				}
+			}
+		}
 	}
 
 	return problems;

@@ -213,6 +213,9 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		onoremap: (keys, rhs) => addMap(keys, rhs, ["operatorPending"], false),
 
 		unmap: (keys, contexts) => {
+			if (typeof keys !== "string") {
+				throw new Error(`vim.unmap needs the key to free, as a string (got ${typeof keys})`);
+			}
 			unmaps.push({ keys: listenFor(keys), contexts });
 		},
 		nunmap: (keys) => api.unmap(keys, ["normal"]),
