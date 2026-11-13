@@ -7,10 +7,23 @@ import type { CodeMirrorShim, VimApi } from "../types";
  * mapping expands to. It matters for macros: a key from "user" is recorded
  * while a macro is being recorded, so a command that sends `V` would be
  * recorded as the command *and* the `V`, and replaying the macro would run
- * both.
+ * both. For the same reason the key is kept out of what `.` repeats.
  */
 export function sendKey(vim: VimApi, cm: CodeMirrorShim, key: string): void {
+	// An edit key records itself as the last change, for the dot command. The
+	// command that sent it was recorded first, so without this `.` repeats the
+	// key and not the command: a command that enters insert mode would be
+	// repeated as a bare `i`.
+	const state = cm.state.vim;
+	const before = state && {
+		input: state.lastEditInputState,
+		action: state.lastEditActionCommand,
+	};
 	vim.handleKey(cm, key, "mapping");
+	if (state && before) {
+		state.lastEditInputState = before.input;
+		state.lastEditActionCommand = before.action;
+	}
 }
 
 /** True in `v`, `V` and `<C-v>` alike. */
