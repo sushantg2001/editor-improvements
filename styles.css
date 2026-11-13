@@ -16,7 +16,9 @@
 	color: var(--color-green);
 }
 
-.editor-improvements-mode.ei-mode-visual {
+.editor-improvements-mode.ei-mode-visual,
+.editor-improvements-mode.ei-mode-visual-line,
+.editor-improvements-mode.ei-mode-visual-block {
 	color: var(--color-yellow);
 }
 
