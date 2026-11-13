@@ -225,7 +225,9 @@ export class ScriptHost extends Component {
 		const names = listing.files
 			.map((path) => path.slice(path.lastIndexOf("/") + 1))
 			.filter((name) => name.endsWith(".js"))
-			.sort((a, b) => a.localeCompare(b));
+			// By character code, not locale: the order decides which script wins a conflict,
+			// and a synced vault must run its scripts in the same order on every device.
+			.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
 		return [
 			...names.filter((name) => name === ENTRY_POINT),
