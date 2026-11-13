@@ -145,7 +145,13 @@ export class MarkdownView {
 export class Workspace extends Events {
 	activeView: MarkdownView | null = null;
 	activeFile: unknown = null;
+	/** Test helper: the markdown views open in the workspace. */
+	markdownViews: MarkdownView[] = [];
 	layoutReadyCallbacks: (() => void)[] = [];
+
+	getLeavesOfType(type: string): { view: MarkdownView }[] {
+		return type === "markdown" ? this.markdownViews.map((view) => ({ view })) : [];
+	}
 
 	getActiveFile(): unknown {
 		return this.activeFile;
