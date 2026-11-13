@@ -213,7 +213,7 @@ describe("MappingLedger", () => {
 		ledger.apply(vim, dispatcher, bindings);
 		ledger.apply(vim, dispatcher, bindings);
 
-		expect(vim.defined).toEqual(["editorImprovements_a"]);
+		expect(vim.defined).toEqual(["editorImprovements_action_a"]);
 	});
 
 	it("leaves the keymap empty after teardown", () => {

@@ -18,8 +18,17 @@ import type {
 /** Prefix for every name we define on the vim side, to avoid collisions. */
 const STUB_PREFIX = "editorImprovements_";
 
-export function stubName(id: string): string {
-	return STUB_PREFIX + id.replace(/[^A-Za-z0-9]/g, "_");
+/**
+ * The name of the vim-side stub for an action of a given kind.
+ *
+ * The kind is part of the name because vim keeps motions, operators and
+ * actions in separate tables and cannot remove a name from any of them. An id
+ * whose script is edited from `action` to `motion` needs a stub in the motion
+ * table; reusing the old name would point the key at a table where it does not
+ * exist.
+ */
+export function stubName(id: string, kind: VimActionKind): string {
+	return `${STUB_PREFIX}${kind}_${id.replace(/[^A-Za-z0-9]/g, "_")}`;
 }
 
 interface MotionArgs {
@@ -54,7 +63,7 @@ export class VimDispatcher {
 	 * the Vim API is unavailable.
 	 */
 	ensure(vim: VimApi, id: string, kind: VimActionKind): string | null {
-		const name = stubName(id);
+		const name = stubName(id, kind);
 		if (this.defined.has(name)) {
 			return name;
 		}
