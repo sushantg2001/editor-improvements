@@ -220,11 +220,35 @@ export class VimDispatcher {
 				return undefined;
 			}
 			this.applyResultMode(def.resultMode, ctx);
-			return result;
+			return this.checkedResult(id, result);
 		} catch (error) {
 			this.report(id, error);
 			return undefined;
 		}
+	}
+
+	/**
+	 * A position a script hands back goes straight into vim and CodeMirror, which
+	 * do arithmetic on it: `NaN` threw from inside the addon, a fraction became a
+	 * cursor between two characters, and a missing `ch` did both. Whole numbers
+	 * pass; anything else that looks like a position is reported against the
+	 * action, and the cursor stays where it was.
+	 */
+	private checkedResult(id: string, result: VimActionResult): VimActionResult {
+		if (typeof result !== "object" || result === null || !("line" in result || "ch" in result)) {
+			return result;
+		}
+		const { line, ch } = result as { line?: unknown; ch?: unknown };
+		if (Number.isFinite(line) && Number.isFinite(ch)) {
+			return { line: Math.floor(line as number), ch: Math.floor(ch as number) };
+		}
+		this.report(
+			id,
+			new Error(
+				`returned ${JSON.stringify({ line, ch })}; a position is { line, ch } with finite numbers`,
+			),
+		);
+		return undefined;
 	}
 
 	private applyResultMode(
