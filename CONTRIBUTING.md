@@ -24,7 +24,7 @@ export const myModule: FeatureModule = {
 };
 ```
 
-- Action ids are camelCase and unique across all modules. Groups are capitalised labels.
+- Action ids are camelCase and unique across all modules, except where a command keeps the id of the plugin it replaces. Groups are capitalised labels.
 - `create` must not touch the editor or the Vim API; actions do that when they run.
 - Tests mirror `src/`: `tests/unit/modules/<id>.test.ts` for logic, `tests/integration/modules/<id>.test.ts` for behaviour against the real CodeMirror vim. `tests/unit/modules/contract.test.ts` checks every listed module automatically.
 - Shared test helpers live in `tests/helpers/`.

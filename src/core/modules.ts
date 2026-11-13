@@ -2,7 +2,7 @@ import { Component } from "obsidian";
 import type { App } from "obsidian";
 
 import type { ActionRegistry, Contribution } from "./registry";
-import type { ActionSource, VimApi } from "../types";
+import type { ActionSource, VimApi, EditorImprovementsSettings } from "../types";
 
 /**
  * Everything a feature module may depend on.
@@ -14,6 +14,8 @@ import type { ActionSource, VimApi } from "../types";
 export interface ModuleContext {
 	app: App;
 	getVim: () => VimApi | null;
+	/** Current settings, read on use so a change applies without a reload. */
+	settings: () => EditorImprovementsSettings;
 }
 
 /** What one module hands back: data for the registry, and optionally a lifecycle. */

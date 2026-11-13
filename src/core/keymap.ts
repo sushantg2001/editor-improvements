@@ -164,6 +164,8 @@ export class MappingLedger {
 		}
 		vim.mapCommand(binding.keys, binding.target.actionKind, name, {}, {
 			context: binding.context,
+			// Only a command flagged as an edit is remembered for `.` to repeat.
+			...(dispatcher.isEdit(binding.target.id) ? { isEdit: true } : {}),
 		});
 		return true;
 	}

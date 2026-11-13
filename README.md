@@ -51,6 +51,8 @@ hotkey slot in Settings → Hotkeys.
 - Lets motions compose with operators, so `d{motion}` works for your own motions.
 - Shows the vim mode in the status bar.
 - Adds `Select all`, `Copy path` and `Paste as plain text`, which Obsidian offers only in right-click menus.
+- Includes every [Editor Shortcuts][shortcuts] command as a vim motion or action, so `d` + a movement key works
+  and a count repeats it. See [docs/editor-shortcuts.md](docs/editor-shortcuts.md).
 
 How the pieces fit is in [docs/architecture.md](docs/architecture.md).
 
@@ -74,3 +76,4 @@ Branches, commits and releases are in [CONTRIBUTING.md](CONTRIBUTING.md).
 MIT
 
 [releases]: https://github.com/sushantg2001/editor-improvements/releases
+[shortcuts]: https://github.com/timhor/obsidian-editor-shortcuts

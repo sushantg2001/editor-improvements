@@ -62,7 +62,7 @@ export default class EditorImprovementsPlugin extends Plugin {
 			new ModuleHost({
 				registry: this.registry,
 				modules: MODULES,
-				context: { app: this.app, getVim },
+				context: { app: this.app, getVim, settings: () => this.settings },
 				onError: (module, error) => {
 					const message = error instanceof Error ? error.message : String(error);
 					new Notice(`Editor Improvements: module "${module.id}" failed to start\n${message}`, 8000);

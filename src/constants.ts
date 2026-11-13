@@ -43,6 +43,7 @@ export const DEFAULT_SETTINGS: EditorImprovementsSettings = {
 	scriptsEnabled: false,
 	scriptsFolder: "",
 	leader: "\\",
+	autoInsertListPrefix: true,
 	modePrompts: {
 		normal: "NORMAL",
 		insert: "INSERT",

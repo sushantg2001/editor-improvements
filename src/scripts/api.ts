@@ -23,6 +23,8 @@ export interface DefineOptions {
 	command?: boolean;
 	needsEditor?: boolean;
 	resultMode?: "insert" | "normal";
+	/** The action changes the document, so `.` repeats it. */
+	isEdit?: boolean;
 }
 
 /** The `vim` object handed to every script. */
@@ -109,6 +111,7 @@ export function createScriptApi(deps: ScriptApiDeps): {
 			command: options.command,
 			needsEditor: options.needsEditor,
 			resultMode: options.resultMode,
+			isEdit: options.isEdit,
 			run,
 		});
 		defined.set(id, kind);
