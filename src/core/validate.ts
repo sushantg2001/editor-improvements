@@ -79,6 +79,15 @@ function bindingProblems(label: string, keys: string, contexts: BindingContext[]
 	const keyProblem = describeKeysProblem(keys);
 	if (keyProblem) {
 		problems.push(`${label}: ${keyProblem}`);
+	} else if (keys.length > 1 && keys.startsWith(":")) {
+		// Vim reads a left-hand side that starts with ":" as the name of an ex
+		// command, and refuses one that is limited to a mode, which every binding
+		// here is. The refusal is an exception, and it stopped the keys after it
+		// from being applied.
+		problems.push(
+			`${label}: a left-hand side starting with ":" names an ex command, which cannot be mapped to keys here; ` +
+				`define an action with vim.action and map a key to it`,
+		);
 	}
 	if (contexts.length === 0) {
 		problems.push(`${label}: no context to bind in`);
