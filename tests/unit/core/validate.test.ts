@@ -104,3 +104,16 @@ describe("validateContribution", () => {
 		expect(problems).toEqual(['binding "a": the right-hand side is empty']);
 	});
 });
+
+describe("validateContribution unmaps", () => {
+	it("accepts valid keys", () => {
+		expect(validateContribution({ unmaps: [{ keys: "S" }, { keys: "<Space>", contexts: ["normal"] }] })).toEqual([]);
+	});
+
+	it("rejects a misspelt or empty one", () => {
+		const problems = validateContribution({ unmaps: [{ keys: "<Escape>" }, { keys: "" }] });
+
+		expect(problems).toHaveLength(2);
+		expect(problems[0]).toMatch(/^unmap "<Escape>"/);
+	});
+});

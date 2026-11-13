@@ -188,3 +188,21 @@ describe("ActionRegistry notifications", () => {
 		expect(listener).not.toHaveBeenCalled();
 	});
 });
+
+describe("ActionRegistry unmaps", () => {
+	it("lists them in source order", () => {
+		const registry = new ActionRegistry();
+		registry.set("module:a", { unmaps: [{ keys: "S" }] });
+		registry.set("script:init.js", { unmaps: [{ keys: ",", contexts: ["normal"] }, { keys: "\\" }] });
+
+		expect(registry.unmaps().map((u) => u.keys)).toEqual(["S", ",", "\\"]);
+	});
+
+	it("drops a source's unmaps when the source is replaced", () => {
+		const registry = new ActionRegistry();
+		registry.set("script:init.js", { unmaps: [{ keys: "S" }] });
+		registry.set("script:init.js", {});
+
+		expect(registry.unmaps()).toEqual([]);
+	});
+});

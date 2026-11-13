@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
 import type { App } from "obsidian";
 
-import type { BindingSpec, Contribution } from "../core/registry";
+import type { BindingSpec, Contribution, UnmapSpec } from "../core/registry";
 import type {
 	BindingContext,
 	VimActionArgs,
@@ -49,6 +49,20 @@ export interface ScriptApi {
 	inoremap(keys: string, rhs: string): void;
 	onoremap(keys: string, rhs: string): void;
 
+	/**
+	 * Removes vim's built-in binding for `keys`. That is what lets a key that
+	 * means something already, like `S` or `,`, be the start of a longer
+	 * mapping such as `Sl`.
+	 *
+	 * Unlike a mapping, this is not undone when a script is edited or the
+	 * plugin is turned off: the built-in stays gone until Obsidian restarts.
+	 */
+	unmap(keys: string, contexts?: BindingContext[]): void;
+	nunmap(keys: string): void;
+	vunmap(keys: string): void;
+	iunmap(keys: string): void;
+	ounmap(keys: string): void;
+
 	/** Binds a key straight to an action id, skipping id-vs-keys guessing. */
 	bind(keys: string, actionId: string, contexts?: BindingContext[]): void;
 
@@ -90,6 +104,7 @@ export function createScriptApi(deps: ScriptApiDeps): {
 } {
 	const actions: VimActionDef[] = [];
 	const bindings: BindingSpec[] = [];
+	const unmaps: UnmapSpec[] = [];
 	let leader = deps.leader;
 
 	const defined = new Map<string, VimActionDef["kind"]>();
@@ -160,6 +175,14 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		inoremap: (keys, rhs) => addMap(keys, rhs, ["insert"], false),
 		onoremap: (keys, rhs) => addMap(keys, rhs, ["operatorPending"], false),
 
+		unmap: (keys, contexts) => {
+			unmaps.push({ keys: expandLeader(keys, leader), contexts });
+		},
+		nunmap: (keys) => api.unmap(keys, ["normal"]),
+		vunmap: (keys) => api.unmap(keys, ["visual"]),
+		iunmap: (keys) => api.unmap(keys, ["insert"]),
+		ounmap: (keys) => api.unmap(keys, ["operatorPending"]),
+
 		bind: (keys, actionId, contexts = ["normal"]) => {
 			bindings.push({
 				keys: expandLeader(keys, leader),
@@ -202,7 +225,7 @@ export function createScriptApi(deps: ScriptApiDeps): {
 		},
 	};
 
-	return { api, contribution: { actions, bindings } };
+	return { api, contribution: { actions, bindings, unmaps } };
 }
 
 /** Replaces `<leader>` with the configured prefix, as vim does at map time. */

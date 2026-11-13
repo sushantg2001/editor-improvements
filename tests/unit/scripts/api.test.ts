@@ -25,6 +25,9 @@ function setup(vim: Partial<VimApi> | null = {}, known: string[] = []) {
 		get actions() {
 			return contribution.actions ?? [];
 		},
+		get unmaps() {
+			return contribution.unmaps ?? [];
+		},
 	};
 }
 
@@ -225,5 +228,54 @@ describe("obcommand", () => {
 		};
 
 		expect(() => api.obcommand("nope:nope")).toThrow(/not be found|not found/);
+	});
+});
+
+describe("unmap", () => {
+	it("records the keys to free, in every context unless told otherwise", () => {
+		const t = setup();
+
+		t.api.unmap(",");
+
+		expect(t.unmaps).toEqual([{ keys: ",", contexts: undefined }]);
+	});
+
+	it("takes the contexts it is given", () => {
+		const t = setup();
+
+		t.api.unmap("S", ["normal", "visual"]);
+
+		expect(t.unmaps).toEqual([{ keys: "S", contexts: ["normal", "visual"] }]);
+	});
+
+	it.each([
+		["nunmap", "normal"],
+		["vunmap", "visual"],
+		["iunmap", "insert"],
+		["ounmap", "operatorPending"],
+	] as const)("%s frees the key in %s only", (name, context) => {
+		const t = setup();
+
+		t.api[name]("S");
+
+		expect(t.unmaps).toEqual([{ keys: "S", contexts: [context] }]);
+	});
+
+	it("expands the leader like a mapping does", () => {
+		const t = setup();
+		t.api.leader(" ");
+
+		t.api.nunmap("<leader>");
+
+		expect(t.unmaps[0]?.keys).toBe(" ");
+	});
+
+	it("applies nothing by itself", () => {
+		const vim = { unmap: vi.fn() };
+		const t = setup(vim);
+
+		t.api.nunmap("S");
+
+		expect(vim.unmap).not.toHaveBeenCalled();
 	});
 });
