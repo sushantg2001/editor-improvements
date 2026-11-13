@@ -9,6 +9,7 @@ import {
 	isWholeWord,
 	isWordChar,
 	leadingWhitespace,
+	offsetAtColumn,
 	transformCase,
 	wordRangeAt,
 } from "./text";
@@ -132,14 +133,14 @@ export const deleteLine: Edit = (state) =>
 			const previous = doc.line(first.number - 1);
 			return {
 				changes: { from: previous.to, to: last.to },
-				range: EditorSelection.cursor(previous.from + Math.min(col, previous.length)),
+				range: EditorSelection.cursor(offsetAtColumn(previous, col)),
 			};
 		}
 
 		const following = doc.line(last.number + 1);
 		return {
 			changes: { from: first.from, to: last.to + 1 },
-			range: EditorSelection.cursor(first.from + Math.min(col, following.length)),
+			range: EditorSelection.cursor(offsetAtColumn({ from: first.from, text: following.text }, col)),
 		};
 	});
 

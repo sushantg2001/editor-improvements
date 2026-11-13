@@ -1,7 +1,7 @@
 import { findClusterBreak } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
 
-import { groupBoundary } from "./text";
+import { groupBoundary, offsetAtColumn } from "./text";
 
 /**
  * Where a cursor goes: pure functions from a document offset to another, with a
@@ -35,7 +35,7 @@ function byLines(state: EditorState, offset: number, delta: number): number {
 	const { doc } = state;
 	const line = doc.lineAt(offset);
 	const target = doc.line(Math.max(1, Math.min(doc.lines, line.number + delta)));
-	return target.from + Math.min(offset - line.from, target.length);
+	return offsetAtColumn(target, offset - line.from);
 }
 
 export const lineBelow: Move = (state, offset, count) => byLines(state, offset, count);
