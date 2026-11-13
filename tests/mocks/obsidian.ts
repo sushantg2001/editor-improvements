@@ -314,6 +314,8 @@ export class PluginSettingTab {
 
 class BaseComponent {
 	value: unknown = null;
+	/** The field a text component edits; a test fires `change` on it as Obsidian does on blur or Enter. */
+	inputEl = document.createElement("input");
 	changeHandler: ((value: unknown) => void) | null = null;
 
 	onChange(handler: (value: unknown) => void): this {
