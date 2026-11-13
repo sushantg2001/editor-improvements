@@ -18,8 +18,8 @@ nothing without it.
 ## Configure
 
 Configuration is JavaScript. Scripts live in `<vault>/.obsidian/editor-improvements/`, `init.js` first and the rest in
-lexical order. Saving a script reloads it, and a script that throws is reported with its file and line without
-stopping the others.
+lexical order. Saving a script reloads it. A script that throws is reported with its file and line, keeps its last
+working version in effect, and does not stop the others.
 
 Run **Editor Improvements: Create scripts folder with a starter init.js** from the command palette, then turn on
 **Run scripts from the vault** in the plugin settings. Scripts are off by default because they are arbitrary code

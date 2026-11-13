@@ -40,9 +40,9 @@ export interface ScriptHostOptions {
  * device. See SECURITY.md.
  *
  * Every script produces a contribution, and the whole set is handed to the
- * registry in one batch at the end. That makes a reload atomic: either the new
- * configuration replaces the old one entirely, or a script failed and its
- * contribution is simply never applied.
+ * registry in one batch at the end. That makes a reload atomic. A script that
+ * fails contributes nothing new: its last working version, if it had one,
+ * stays in effect.
  *
  * Scripts live under the vault's config directory, which is deliberately
  * outside the file index, so they are read through the adapter rather than the
@@ -53,6 +53,15 @@ export class ScriptHost extends Component {
 	private appliedSources: ActionSource[] = [];
 	private reloadTimer: number | null = null;
 	private running: Promise<ScriptLoadResult> | null = null;
+	/**
+	 * The last contribution of each script that ran without an error.
+	 *
+	 * Scripts reload on every save, so one is often saved half-written. Dropping
+	 * its configuration for that moment would put every key it maps back to
+	 * vim's own, in the middle of whatever the user is doing. A script that fails
+	 * keeps its last working version until it is fixed, and says so.
+	 */
+	private readonly lastGood = new Map<ActionSource, Contribution>();
 	private rerun = false;
 
 	constructor(private readonly options: ScriptHostOptions) {
@@ -126,15 +135,39 @@ export class ScriptHost extends Component {
 		const pending = new Map<string, VimActionKind>();
 
 		for (const file of files) {
+			const source = sourceOf(file);
 			const outcome = await this.runScript(file, pending);
+			let contribution: Contribution;
 			if ("error" in outcome) {
-				errors.push(outcome.error);
-				continue;
+				const kept = this.lastGood.get(source);
+				errors.push(
+					kept
+						? {
+								...outcome.error,
+								message: `${outcome.error.message}\nThe last working version of ${file} stays in effect.`,
+							}
+						: outcome.error,
+				);
+				if (!kept) {
+					continue;
+				}
+				contribution = kept;
+			} else {
+				loaded.push(file);
+				contribution = outcome.contribution;
+				this.lastGood.set(source, contribution);
 			}
-			loaded.push(file);
-			applied.push([sourceOf(file), outcome.contribution]);
-			for (const action of outcome.contribution.actions ?? []) {
+			applied.push([source, contribution]);
+			for (const action of contribution.actions ?? []) {
 				pending.set(action.id, action.kind);
+			}
+		}
+
+		// A script that is gone, or scripts switched off, keep nothing.
+		const present = new Set(files.map(sourceOf));
+		for (const source of [...this.lastGood.keys()]) {
+			if (!present.has(source)) {
+				this.lastGood.delete(source);
 			}
 		}
 
