@@ -38,6 +38,20 @@ describe("validateContribution", () => {
 		expect(validateContribution({ actions: [action({ id })] })[0]).toMatch(/ids start with/);
 	});
 
+	it.each(["reload-config", "show-status", "create-scripts-folder"])(
+		"rejects %s, the id of one of the plugin's own commands",
+		(id) => {
+			const problems = validateContribution({ actions: [action({ id })] });
+
+			expect(problems).toHaveLength(1);
+			expect(problems[0]).toMatch(/belongs to a command of the plugin/);
+		},
+	);
+
+	it("allows a reserved id for an action that registers no command", () => {
+		expect(validateContribution({ actions: [action({ id: "reload-config", command: false })] })).toEqual([]);
+	});
+
 	it("rejects a duplicated id within one source", () => {
 		const problems = validateContribution({ actions: [action(), action()] });
 

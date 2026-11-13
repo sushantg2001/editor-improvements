@@ -1,3 +1,4 @@
+import { RESERVED_COMMAND_IDS } from "../constants";
 import { describeKeysProblem } from "./keys";
 import type { Contribution } from "./registry";
 import type { BindingContext } from "../types";
@@ -22,6 +23,12 @@ export function validateContribution(contribution: Contribution): string[] {
 		if (!ACTION_ID.test(action.id)) {
 			problems.push(
 				`${label}: ids start with a letter and use only letters, digits, "_" and "-"`,
+			);
+		}
+		if (action.command !== false && RESERVED_COMMAND_IDS.includes(action.id)) {
+			// Obsidian would let this replace the plugin's own command of that name.
+			problems.push(
+				`${label}: this id belongs to a command of the plugin; pick another or pass { command: false }`,
 			);
 		}
 		if (seen.has(action.id)) {
