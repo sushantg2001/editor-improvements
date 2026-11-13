@@ -24,15 +24,37 @@ export function offsetAtColumn(line: { from: number; text: string }, column: num
 	return line.from + findClusterBreak(line.text, column + 1, false);
 }
 
+/**
+ * The character starting at `index`, whole when it is a surrogate pair.
+ *
+ * A letter outside the basic plane, such as the 𠮷 in 𠮷野家, is two UTF-16
+ * units, and neither half is a letter on its own.
+ */
+export function charAtIndex(text: string, index: number): string {
+	const code = text.codePointAt(index);
+	return code === undefined ? "" : String.fromCodePoint(code);
+}
+
+/** The character ending at `index`, whole when it is a surrogate pair. */
+export function charBeforeIndex(text: string, index: number): string {
+	if (index <= 0) {
+		return "";
+	}
+	const low = text.charCodeAt(index - 1);
+	const high = index >= 2 ? text.charCodeAt(index - 2) : 0;
+	const isPair = low >= 0xdc00 && low <= 0xdfff && high >= 0xd800 && high <= 0xdbff;
+	return isPair ? text.slice(index - 2, index) : text.charAt(index - 1);
+}
+
 /** The word touching `column` in `text`, as `[from, to)` columns. Empty when none. */
 export function wordRangeAt(text: string, column: number): [number, number] {
 	let start = column;
 	let end = column;
-	while (start > 0 && isWordChar(text.charAt(start - 1))) {
-		start--;
+	for (let char = charBeforeIndex(text, start); isWordChar(char); char = charBeforeIndex(text, start)) {
+		start -= char.length;
 	}
-	while (end < text.length && isWordChar(text.charAt(end))) {
-		end++;
+	for (let char = charAtIndex(text, end); isWordChar(char); char = charAtIndex(text, end)) {
+		end += char.length;
 	}
 	return [start, end];
 }
@@ -49,7 +71,8 @@ export function toTitleCase(text: string): string {
 			if (index > 0 && index < all.length - 1 && LOWERCASE_ARTICLES.has(word.toLowerCase())) {
 				return word.toLowerCase();
 			}
-			return word.charAt(0).toUpperCase() + word.substring(1).toLowerCase();
+			const first = charAtIndex(word, 0);
+			return first.toUpperCase() + word.slice(first.length).toLowerCase();
 		})
 		.join("");
 }
@@ -99,18 +122,20 @@ export function groupBoundary(state: EditorState, offset: number, forward: boole
 	let category: CharCategory | null = null;
 
 	for (;;) {
-		const next = forward ? position : position - 1;
-		if (next < 0 || next >= doc.length) {
+		if (forward ? position >= doc.length : position <= 0) {
 			return position;
 		}
-		const char = doc.sliceString(next, next + 1);
+		const window = forward
+			? doc.sliceString(position, position + 2)
+			: doc.sliceString(Math.max(0, position - 2), position);
+		const char = forward ? charAtIndex(window, 0) : charBeforeIndex(window, window.length);
 		const charCategory = categorize(char);
 		if (category === null || category === CharCategory.Space) {
 			category = charCategory;
 		} else if (category !== charCategory) {
 			return position;
 		}
-		position += forward ? 1 : -1;
+		position += forward ? char.length : -char.length;
 	}
 }
 
