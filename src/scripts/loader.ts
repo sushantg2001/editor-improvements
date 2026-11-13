@@ -448,7 +448,13 @@ export function sourceOf(file: string): ActionSource {
 }
 
 function describe(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
+	if (error instanceof Error) {
+		return error.message;
+	}
+	// A script may throw anything. An object with a message says what went wrong;
+	// String() of it would only say "[object Object]".
+	const message = (error as { message?: unknown } | null)?.message;
+	return typeof message === "string" ? message : String(error);
 }
 
 type ScriptFactory = new (...args: string[]) => (vim: unknown) => Promise<void>;

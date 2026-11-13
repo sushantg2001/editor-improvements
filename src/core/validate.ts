@@ -89,6 +89,11 @@ function bindingProblems(label: string, keys: string, contexts: BindingContext[]
 				`define an action with vim.action and map a key to it`,
 		);
 	}
+	if (!Array.isArray(contexts)) {
+		// A string would be read one letter at a time, as "unknown context n".
+		problems.push(`${label}: contexts is a list such as ["normal", "visual"], not ${describeValue(contexts)}`);
+		return problems;
+	}
 	if (contexts.length === 0) {
 		problems.push(`${label}: no context to bind in`);
 	}
@@ -98,4 +103,8 @@ function bindingProblems(label: string, keys: string, contexts: BindingContext[]
 		}
 	}
 	return problems;
+}
+
+function describeValue(value: unknown): string {
+	return value === null ? "null" : typeof value === "string" ? JSON.stringify(value) : typeof value;
 }
