@@ -2,6 +2,7 @@ import { Component, Notice, normalizePath } from "obsidian";
 import type { App, DataAdapter } from "obsidian";
 
 import { createScriptApi } from "./api";
+import { TYPINGS, TYPINGS_FILENAME } from "./typings";
 import { validateContribution } from "../core/validate";
 import type { ActionRegistry, Contribution } from "../core/registry";
 import type { ActionSource, VimApi } from "../types";
@@ -110,7 +111,11 @@ export class ScriptHost extends Component {
 	}
 
 	private async runReload(): Promise<ScriptLoadResult> {
-		const files = this.options.isEnabled() ? await this.listScripts() : [];
+		const enabled = this.options.isEnabled();
+		const files = enabled ? await this.listScripts() : [];
+		if (enabled) {
+			await this.syncTypings();
+		}
 		const loaded: string[] = [];
 		const errors: ScriptError[] = [];
 		const applied: [ActionSource, Contribution][] = [];
@@ -150,6 +155,31 @@ export class ScriptHost extends Component {
 			this.options.registry.remove(source);
 		}
 		this.appliedSources = [];
+	}
+
+	/**
+	 * Keeps `editor-improvements.d.ts` in step with the plugin.
+	 *
+	 * It describes the `vim` object, which changes with each release, and the
+	 * file is only otherwise written by the "Create scripts folder" command,
+	 * so an editor would go on autocompleting last year's API. It belongs to
+	 * the plugin, and its header says it is rewritten, so it is rewritten when it
+	 * differs. Only where a scripts folder already exists, and never at the
+	 * cost of loading the scripts: it is a convenience.
+	 */
+	private async syncTypings(): Promise<void> {
+		try {
+			if (!(await this.adapter.exists(this.folder))) {
+				return;
+			}
+			const path = normalizePath(`${this.folder}/${TYPINGS_FILENAME}`);
+			const current = (await this.adapter.exists(path)) ? await this.adapter.read(path) : null;
+			if (current !== TYPINGS) {
+				await this.adapter.write(path, TYPINGS);
+			}
+		} catch {
+			// Read-only folder, or a sync client holding the file.
+		}
 	}
 
 	private async listScripts(): Promise<string[]> {
