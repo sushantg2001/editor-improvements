@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { ActionRegistry } from "../../src/core/registry";
 import { ScriptHost } from "../../src/scripts/loader";
 import { editorShortcutsContribution } from "../../src/modules/editor-shortcuts";
-import { DEFAULT_SETTINGS } from "../../src/constants";
+import { DEFAULT_SETTINGS, PLUGIN_ID } from "../../src/constants";
 import { App } from "../mocks/obsidian";
 
 /**
@@ -164,5 +164,57 @@ describe("the commit and branch types", () => {
 		for (const branch of ["claude/anything", "feature/x", "Fix/Upper", "fix/"]) {
 			expect(pattern.test(branch), branch).toBe(false);
 		}
+	});
+});
+
+describe("links between the documents", () => {
+	const FILES = ["README.md", "CONTRIBUTING.md", "SECURITY.md", ...readdirSync("docs").map((f) => `docs/${f}`)].filter(
+		(f) => f.endsWith(".md") && existsSync(f),
+	);
+
+	/** Every `[text](target)` and `[text][ref]` target that is a path in this repository. */
+	function localTargets(file: string): string[] {
+		const text = read(file);
+		const refs = new Map([...text.matchAll(/^\[([^\]]+)\]:\s*(\S+)/gm)].map((m) => [m[1] ?? "", m[2] ?? ""]));
+		const inline = [...text.matchAll(/\]\(([^)\s]+)\)/g)].map((m) => m[1] ?? "");
+		const referenced = [...text.matchAll(/\]\[([^\]]+)\]/g)].map((m) => refs.get(m[1] ?? "") ?? "");
+		return [...inline, ...referenced].filter((t) => t && !/^[a-z]+:|^#/i.test(t));
+	}
+
+	it.each(FILES)("every relative link in %s points at a file that exists", (file) => {
+		const dir = file.includes("/") ? file.slice(0, file.lastIndexOf("/")) : ".";
+		const missing = localTargets(file)
+			.map((target) => target.split("#")[0] ?? "")
+			.filter((target) => target && !existsSync(`${dir}/${target}`));
+
+		expect(missing).toEqual([]);
+	});
+
+	it("covers the documents that exist", () => {
+		expect(FILES).toEqual(expect.arrayContaining(["README.md", "CONTRIBUTING.md", "docs/architecture.md"]));
+	});
+});
+
+describe("the plugin's identity files agree", () => {
+	const manifest = JSON.parse(read("manifest.json")) as { id: string; version: string; minAppVersion: string; name: string };
+	const pkg = JSON.parse(read("package.json")) as { version: string };
+	const releaseManifest = JSON.parse(read(".release-please-manifest.json")) as Record<string, string>;
+	const versions = JSON.parse(read("versions.json")) as Record<string, string>;
+
+	it("use one id, the one the code registers commands under", () => {
+		expect(manifest.id).toBe(PLUGIN_ID);
+	});
+
+	it("carry one version, so the release check on the tag cannot fail on a mismatch", () => {
+		expect(pkg.version).toBe(manifest.version);
+		expect(releaseManifest["."]).toBe(manifest.version);
+	});
+
+	it("name no minimum app version later than the newest one in versions.json", () => {
+		const newest = Object.values(versions).sort((a, b) =>
+			a.localeCompare(b, undefined, { numeric: true }),
+		);
+		expect(newest.at(-1)).toBeDefined();
+		expect(manifest.minAppVersion.localeCompare(newest.at(-1) ?? "", undefined, { numeric: true })).toBeLessThanOrEqual(0);
 	});
 });
