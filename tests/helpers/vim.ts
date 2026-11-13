@@ -9,6 +9,24 @@ import type { CodeMirrorShim, VimApi, VimContext } from "../../src/types";
  * library Obsidian bundles — so these tests exercise actual vim behaviour
  * rather than a hand-written stand-in.
  */
+/** Every editor made here, so the test setup can destroy them and cancel what they scheduled. */
+const made = new Set<EditorView>();
+
+/**
+ * Destroys the editors tests made. A CodeMirror view schedules a measure on the
+ * next animation frame; one left alive fires after the environment is torn
+ * down, where there is no `document`, and fails as an unhandled error in
+ * whichever test file happens to be running.
+ */
+export function destroyEditors(): void {
+	for (const view of made) {
+		if (!(view as unknown as { destroyed: boolean }).destroyed) {
+			view.destroy();
+		}
+	}
+	made.clear();
+}
+
 export function makeEditor(doc: string) {
 	const parent = document.createElement("div");
 	document.body.appendChild(parent);
@@ -16,6 +34,7 @@ export function makeEditor(doc: string) {
 		state: EditorState.create({ doc, extensions: [vim()] }),
 		parent,
 	});
+	made.add(view);
 	const cm = getCM(view) as unknown as CodeMirrorShim;
 
 	// Mirror how Obsidian publishes the API, so code under test resolves it
