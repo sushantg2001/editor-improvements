@@ -1,4 +1,4 @@
-import { EditorSelection } from "@codemirror/state";
+import { EditorSelection, Facet, StateEffect } from "@codemirror/state";
 import type { ChangeSpec, EditorState, Line, SelectionRange, TransactionSpec } from "@codemirror/state";
 
 import { belongsToItemAbove, isOrderedPrefix, listMarkerLength, nextListPrefix, renumberFrom } from "./lists";
@@ -30,11 +30,37 @@ export interface EditEnv {
 	continueLists: boolean;
 }
 
-/** The lines a range touches. One that ends at a line start does not include that line. */
+/**
+ * Set on the state an edit sees while vim is in linewise visual mode.
+ *
+ * There a selection always ends on a line it includes. Without this a range
+ * that ends at a line start reads as "up to the end of the line before", which
+ * is right for a selection of whole lines plus their newline but wrong when
+ * the line it ends on is empty: a linewise selection of "a" and an empty line
+ * ends at the empty line's start too.
+ */
+export const linewiseSelection = Facet.define<boolean, boolean>({
+	combine: (values) => values.some(Boolean),
+});
+
+/** The same state, told that its selection is vim's linewise visual selection. */
+export function asLinewise(state: EditorState): EditorState {
+	return state.update({ effects: StateEffect.appendConfig.of(linewiseSelection.of(true)) }).state;
+}
+
+/**
+ * The lines a range touches. Outside linewise visual mode, one that ends at a
+ * line start does not include that line.
+ */
 function lineSpan(state: EditorState, range: SelectionRange): { first: Line; last: Line } {
 	const first = state.doc.lineAt(range.from);
 	let last = state.doc.lineAt(range.to);
-	if (range.to > range.from && last.number > first.number && range.to === last.from) {
+	if (
+		!state.facet(linewiseSelection) &&
+		range.to > range.from &&
+		last.number > first.number &&
+		range.to === last.from
+	) {
 		last = state.doc.line(last.number - 1);
 	}
 	return { first, last };

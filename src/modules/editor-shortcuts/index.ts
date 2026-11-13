@@ -77,6 +77,9 @@ export function editorShortcutsContribution(ctx: ModuleContext): Contribution {
 	 */
 	const apply = (c: VimContext, run: Edit, options: EditOptions, count: number): void => {
 		let state = options.atCursor && isVisual(c.cm) ? stateAtVimCursor(c) : c.view.state;
+		if (c.cm.state.vim?.visualLine) {
+			state = edits.asLinewise(state);
+		}
 		const times = isVisual(c.cm) || !options.times ? 1 : Math.max(1, options.times(count, state));
 
 		if (times === 1) {
