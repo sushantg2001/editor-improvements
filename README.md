@@ -42,8 +42,9 @@ vim.nmap("gL", "toLastLine");
 ```
 
 `nmap` is recursive and `nnoremap` is not, as in vim. A right-hand side that names one of your actions binds to it;
-anything else is passed to vim as an ordinary remap. Every action also becomes an Obsidian command, so it gets a
-hotkey slot in Settings → Hotkeys.
+anything else is passed to vim as an ordinary remap. Every action and motion also becomes an Obsidian command, so it gets a
+hotkey slot in Settings → Hotkeys. Operators do not, since they need a motion to act on; pass `{ command: true }` to
+force one.
 
 `vim.nunmap("S")` (also `vunmap`, `iunmap`, `ounmap` and `unmap`) removes a built-in binding so the key can start a
 longer mapping, like `Sl`. Unlike a mapping it is not undone when you edit the script: the key stays free until

@@ -20,7 +20,10 @@ export type ScriptRun = (
 export interface DefineOptions {
 	name?: string;
 	group?: string;
-	/** Also register an Obsidian command (and so a hotkey slot). Default true. */
+	/**
+	 * Also register an Obsidian command (and so a hotkey slot). Default true,
+	 * except for operators, which need a motion and so default to false.
+	 */
 	command?: boolean;
 	needsEditor?: boolean;
 	resultMode?: "insert" | "normal";
@@ -135,7 +138,9 @@ export function createScriptApi(deps: ScriptApiDeps): {
 			name: options.name ?? id,
 			group: options.group ?? "Scripts",
 			kind,
-			command: options.command,
+			// An operator acts on a range a motion gives it, and the palette has no
+			// motion to give one, so it is not a command unless the script says so.
+			command: options.command ?? (kind === "operator" ? false : undefined),
 			needsEditor: options.needsEditor,
 			resultMode: options.resultMode,
 			isEdit: options.isEdit,

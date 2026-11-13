@@ -58,7 +58,10 @@ declare global {
 		/** Shown in the command palette. Defaults to the id. */
 		name?: string;
 		group?: string;
-		/** Register an Obsidian command, and so a hotkey slot. Default true. */
+		/**
+		 * Register an Obsidian command, and so a hotkey slot. Default true,
+		 * except for operators, which need a motion and default to false.
+		 */
 		command?: boolean;
 		/** Set false for actions that work without an open note. */
 		needsEditor?: boolean;
