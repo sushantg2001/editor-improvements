@@ -1,5 +1,18 @@
 import type { CodeMirrorShim, VimApi } from "../types";
 
+/**
+ * Sends a key to vim on behalf of an action.
+ *
+ * The origin is "mapping", which is what vim itself passes for the keys a
+ * mapping expands to. It matters for macros: a key from "user" is recorded
+ * while a macro is being recorded, so a command that sends `V` would be
+ * recorded as the command *and* the `V`, and replaying the macro would run
+ * both.
+ */
+export function sendKey(vim: VimApi, cm: CodeMirrorShim, key: string): void {
+	vim.handleKey(cm, key, "mapping");
+}
+
 /** True in `v`, `V` and `<C-v>` alike. */
 export function isVisual(cm: CodeMirrorShim): boolean {
 	return cm.state.vim?.visualMode === true;
@@ -25,7 +38,7 @@ export function enterInsert(vim: VimApi, cm: CodeMirrorShim): void {
 	if (isVisual(cm)) {
 		vim.exitVisualMode(cm);
 	}
-	vim.handleKey(cm, "i", "user");
+	sendKey(vim, cm, "i");
 }
 
 /** Leaves any visual mode, `V` and `<C-v>` included. */
