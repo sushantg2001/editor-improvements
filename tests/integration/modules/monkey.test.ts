@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { afterEach, expect, it } from "vitest";
 
 import { editorShortcutsModule } from "../../../src/modules/editor-shortcuts";
@@ -16,6 +17,8 @@ function prng(seed: number): () => number {
 }
 
 afterEach(() => vimApi.mapclear());
+
+const SRC = `${resolve("src").replace(/\\/g, "/")}/`;
 
 const OURS: [string, string][] = [
 	["gd", "deleteLine"], ["go", "insertLineBelow"], ["gO", "insertLineAbove"], ["gD", "deleteToEndOfLine"],
@@ -64,7 +67,10 @@ it("random sequences never throw from our code and leave a valid editor", () => 
 			}
 		} catch (error) {
 			const stack = String((error as Error).stack);
-			const ours = stack.includes("/src/") || stack.includes("editor-shortcuts");
+			// Ours when a frame is in this repository's src folder. Matching on a name such as
+			// "editor-shortcuts" would also take addon errors when the checkout's own folder
+			// has that in its name.
+			const ours = stack.split("\n").some((line) => line.replace(/\\/g, "/").includes(SRC));
 			if (ours) {
 				failures.push(`seed ${seed} doc ${JSON.stringify(doc)} keys ${JSON.stringify(typed.join(" "))}: ${String(error).slice(0, 120)}\n${stack.split("\n").slice(1, 5).join("\n")}`);
 			} else {
