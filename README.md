@@ -1,7 +1,7 @@
 # Editor Improvements
 
 Neovim-style editing for Obsidian, built on the CodeMirror Vim mode Obsidian already bundles. One plugin in place of
-Vimrc Support, Editor Shortcuts, Jump to Link and Pane Relief.
+Vimrc Support and Editor Shortcuts. Jump to Link and Pane Relief are not covered yet; keep them.
 
 Not in the community plugin directory yet.
 
