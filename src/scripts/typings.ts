@@ -78,7 +78,11 @@ declare global {
 		/** Defines an operator. Receives args.range. */
 		operator(id: string, run: ScriptRun, options?: DefineOptions): void;
 
-		/** Recursive maps, as in vim's nmap family. */
+		/**
+		 * Recursive maps, as in vim's nmap family. With no contexts, map covers
+		 * normal, visual and operator-pending mode, like :map. Use imap, or pass
+		 * "insert", for insert mode.
+		 */
 		map(keys: string, rhs: string, contexts?: BindingContext[]): void;
 		nmap(keys: string, rhs: string): void;
 		vmap(keys: string, rhs: string): void;
