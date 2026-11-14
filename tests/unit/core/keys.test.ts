@@ -102,6 +102,14 @@ describe("normalizeKeys", () => {
 		["<s-tab>", "<S-Tab>"],
 		["<A-C-x>", "<C-A-x>"],
 		["<S-C-X>", "<C-S-X>"],
+		// The editor names Ctrl+Shift+x with a capital, whatever case the mapping was written in.
+		["<C-S-x>", "<C-S-X>"],
+		["<A-S-j>", "<A-S-J>"],
+		// Shift alone makes no modifier: Shift+x is the key X.
+		["<S-x>", "X"],
+		["<S-X>", "X"],
+		// Not a letter: nothing to know about the shifted key, so left as written.
+		["<S-1>", "<S-1>"],
 	])("canonicalises the modifiers of %s to %s", (written, canonical) => {
 		expect(listen(written)).toBe(canonical);
 	});

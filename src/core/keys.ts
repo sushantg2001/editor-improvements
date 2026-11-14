@@ -146,8 +146,13 @@ function canonicalToken(token: string): string {
 	} else if (/^f(?:[1-9]|1[0-2])$/.test(lower)) {
 		name = lower.toUpperCase();
 	} else if ([...rest].length === 1) {
-		// A letter keeps its case only when shift is part of the key.
-		name = modifiers.includes("S") ? rest : rest.toLowerCase();
+		// The editor reports a shifted letter in capitals, `<C-S-X>`, and an unshifted one in
+		// lower case. Shift alone is no modifier at all: Shift+x arrives as the key `X`.
+		const shifted = modifiers.includes("S");
+		name = shifted ? rest.toUpperCase() : rest.toLowerCase();
+		if (shifted && modifiers.length === 1 && name !== name.toLowerCase()) {
+			return name;
+		}
 	} else {
 		return token;
 	}
