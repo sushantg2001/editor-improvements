@@ -3,11 +3,17 @@
 # release-please keeps one "chore(main): release x.y.z" pull request up to date. When you merge it,
 # the next run on main creates a DRAFT release with the notes. It creates NO tag: a tag it created
 # would not be signed by you, and a tag made with GITHUB_TOKEN starts no workflow. Once the draft
-# exists (about a minute after the merge) you create the tag:
+# exists (about a minute after the merge), run the end-to-end suite locally on that commit and
+# attach its report to the draft. The suite needs a real Obsidian, so it never runs in Actions:
+#
+#   bun run e2e && bun run e2e:publish
+#
+# Then create the tag:
 #
 #   git tag -s x.y.z -m x.y.z && git push origin x.y.z     (one YubiKey tap)
 #
-# That push starts this workflow: `check` verifies the tag, then `release` waits for your approval
+# That push starts this workflow. `check` verifies the tag and that the report covers this exact
+# commit and build, and shows the results in the run summary. `release` then waits for your approval
 # (environment "release"), builds, attests, attaches the files and publishes the draft.
 #
 #   feat -> minor, fix -> patch, feat! / BREAKING CHANGE -> major, anything else -> no release.
@@ -45,9 +51,32 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  # Push of a tag: it must be a signed, annotated tag on the default branch.
+  # Push of a tag: read the end-to-end report attached to the draft. Only a token with
+  # contents: write can see a draft, so this job runs no project code.
+  e2e-report:
+    name: Read E2E report
+    if: ${{ github.ref_type == 'tag' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      report: ${{ steps.read.outputs.report }}
+    steps:
+      - name: Download the report from the draft release
+        id: read
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern e2e-report.json --output e2e-report.json \
+            || { echo "::error::No E2E report on the draft for $TAG. Run bun run e2e and bun run e2e:publish on the release commit, then re-run this workflow."; exit 1; }
+          echo "report=$(base64 -w0 e2e-report.json)" >> "$GITHUB_OUTPUT"
+
+  # It must be a signed, annotated tag on the default branch, with a passing report for this build.
   check:
-    name: Check tag
+    name: Check tag and E2E report
+    needs: e2e-report
     if: ${{ github.ref_type == 'tag' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -59,6 +88,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Tag is annotated and signed
         run: |
           read -r type sha < <(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq '"\(.object.type) \(.object.sha)"')
@@ -84,13 +114,26 @@ jobs:
           if [ -n "$prev" ] && [ "$(git show "$prev:manifest.json" | jq -r .minAppVersion)" = "$min" ]; then exit 0; fi
           [ -f versions.json ] && [ "$(jq -r --arg t "$TAG" '.[$t] // empty' versions.json)" = "$min" ] \
             || { echo "::error::minAppVersion $min is new since ${prev:-the start}: add \"$TAG\": \"$min\" to versions.json"; exit 1; }
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      # Writes the results to the run summary, which is what you read before approving.
+      - name: E2E report covers this commit and build
+        env:
+          REPORT: ${{ needs.e2e-report.outputs.report }}
+        run: |
+          printf '%s' "$REPORT" | base64 -d > "$RUNNER_TEMP/e2e-report.json"
+          bun tools/release/verify-e2e.ts "$RUNNER_TEMP/e2e-report.json" "$TAG"
 
   release:
     name: Release
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Waits for your approval. `just github repo --harden` creates the environment with you as reviewer.
+    # Waits for your approval, after you read the E2E results in this run's summary.
+    # `just github repo --harden` creates the environment with you as reviewer.
     environment: release
     permissions:
       contents: write
@@ -115,6 +158,11 @@ jobs:
           bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - run: bun run build
+      # Again after approval, so a report replaced while waiting cannot ship a different build.
+      - name: Release files are the ones the E2E suite tested
+        run: |
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern e2e-report.json --output "$RUNNER_TEMP/e2e-report.json" --clobber
+          bun tools/release/verify-e2e.ts "$RUNNER_TEMP/e2e-report.json" "$TAG"
       - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
           subject-path: |

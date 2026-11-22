@@ -1,29 +1,26 @@
 # Contributing
 
-Thanks for helping with editor-improvements.
+## Setup
+
+```bash
+git clone https://github.com/sushantg2001/editor-improvements.git
+cd editor-improvements
+bun install --frozen-lockfile
+bun run gates
+```
+
+`bun run gates` runs the same checks as CI. `bun run dev` rebuilds `main.js` on every change.
 
 ## Making a change
 
-1. Branch off `main` as `<type>/<slug>`, for example `feat/search-filters` or `fix/null-date`. The types are `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`, `style` and `revert`.
-2. Add tests with the change. A bug fix starts with a failing test.
-3. Run `bun install`, then `bun run gates`. It runs the same checks as CI.
-4. Open a pull request titled `type(scope): summary`, for example `feat(search): add filters`. CI checks the title and the branch name. The title becomes the commit on `main`, and it decides the next version: `feat` is a minor release, `fix` a patch, and `!` or a `BREAKING CHANGE:` footer a major one. Other types release nothing.
-5. A maintainer squash-merges it. One commit lands on `main` with your title.
+1. Branch from `main` as `<type>/<slug>`. The types are `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`, `style` and `revert`.
+2. Add tests. A bug fix starts with a failing test.
+3. Open a PR titled `type(scope): summary`. The title becomes the squash commit and sets the next version: `feat` is minor, `fix` is patch, `!` is major, and other types release nothing.
 
-Urgent fixes follow the same path as any `fix/<slug>` branch. There is no separate hotfix branch.
+Pin every dependency to an exact version.
 
-## Collaboration
-
-Right now collaboration means opening pull requests: fork the repo, or push a `<type>/<slug>` branch if you were invited, then open a PR. You do not need to sign commits. Only the maintainer merges and tags. `claude/*` branches are local-only and GitHub rejects them.
-
-## Releases
-
-Nobody but the maintainer releases. release-please keeps a `chore(main): release x.y.z` pull request up to date, and a draft release appears when the maintainer merges it, but it creates no tag. The maintainer signs the tag (`git tag -s x.y.z`) and pushes it; the release workflow then checks the tag, waits for the maintainer's approval and publishes.
+The maintainer runs the end-to-end tests and makes each release.
 
 ## License
 
-By contributing you agree that your contribution is licensed under the project's license (see `LICENSE`).
-
-## Reporting bugs
-
-Use the bug template and include the version and your platform.
+Contributions are licensed under the project's [MIT license](LICENSE).

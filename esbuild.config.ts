@@ -12,7 +12,7 @@ const context = await esbuild.context({
 	bundle: true,
 	format: "cjs",
 	target: "es2022",
-	// Obsidian serves these through its own require (V13). Node built-ins stay
+	// Obsidian serves these through its own require. Node built-ins stay
 	// external so desktop-only modules can import them dynamically.
 	external: [
 		"obsidian",

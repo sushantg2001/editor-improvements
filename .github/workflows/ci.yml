@@ -1,5 +1,5 @@
-# Runs the repo's gates on every PR and on main. Keep every check behind one command
-# (make ci, just check, bun run check, ...) so a green run locally means a green pipeline.
+# Runs on every PR and on main: typecheck, lint, unit and component tests, build and bundle size,
+# all behind `bun run gates`. The end-to-end suite needs a local Obsidian and never runs here.
 name: CI
 
 on:
@@ -25,5 +25,5 @@ jobs:
         with:
           bun-version: 1.4.4
       - run: bun install --frozen-lockfile
-      - name: Gates
+      - name: Static checks, unit and component tests, build
         run: bun run gates

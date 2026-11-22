@@ -13,6 +13,10 @@
 		"typecheck": "tsc --noEmit",
 		"lint": "eslint .",
 		"size": "bun tools/release/size.ts",
+		"live": "bun tools/live/run.ts",
+		"live:dev": "bun tools/live/dev.ts",
+		"e2e": "bun tools/live/e2e.ts",
+		"e2e:publish": "bun tools/release/publish-e2e.ts",
 		"gates": "bun run typecheck && bun run lint && bun test && bun run build && bun run size"
 	},
 	"devDependencies": {
