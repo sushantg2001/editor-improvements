@@ -2,6 +2,15 @@
 
 An Obsidian plugin in which one Lua keymap decides what every key does, on a Neovim-style vim engine.
 
-Nothing is built yet.
+The plugin is at an early stage. It loads and unloads, and has no features yet.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to contribute.
+## For users
+
+- [Install, update and remove](docs/install.md)
+- [What it does today](docs/what-it-does.md)
+- [Troubleshooting and reporting a problem](docs/troubleshooting.md)
+
+## For contributors
+
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)

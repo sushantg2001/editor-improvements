@@ -2,6 +2,9 @@
 node_modules/
 main.js
 
+# End-to-end reports, published to the draft release and never committed
+.e2e/
+
 # Local secrets and Claude Code state
 .env
 .env.*
