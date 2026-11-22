@@ -1,0 +1,31 @@
+{
+	"name": "editor-improvements",
+	"version": "0.0.0",
+	"private": true,
+	"description": "An Obsidian plugin in which one Lua keymap decides what every key does, on a Neovim-style vim engine.",
+	"license": "MIT",
+	"author": "Sushant Gupta",
+	"type": "module",
+	"packageManager": "bun@1.4.4",
+	"scripts": {
+		"dev": "bun esbuild.config.ts --watch",
+		"build": "bun esbuild.config.ts --production",
+		"typecheck": "tsc --noEmit",
+		"lint": "eslint .",
+		"size": "bun tools/release/size.ts",
+		"gates": "bun run typecheck && bun run lint && bun test && bun run build && bun run size"
+	},
+	"devDependencies": {
+		"@codemirror/state": "6.7.6",
+		"@codemirror/view": "6.43.15",
+		"@eslint/js": "10.0.1",
+		"@types/bun": "1.4.4",
+		"esbuild": "0.28.2",
+		"eslint": "10.15.0",
+		"eslint-plugin-obsidianmd": "0.6.0",
+		"jiti": "2.7.0",
+		"obsidian": "1.14.4",
+		"typescript": "6.0.3",
+		"typescript-eslint": "8.73.0"
+	}
+}

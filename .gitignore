@@ -1,0 +1,9 @@
+# Dependencies and build output
+node_modules/
+main.js
+
+# Local secrets and Claude Code state
+.env
+.env.*
+!.env.example
+.claude/

@@ -1,0 +1,9 @@
+{
+	"id": "editor-improvements",
+	"name": "Editor Improvements",
+	"version": "0.0.0",
+	"minAppVersion": "1.15.0",
+	"description": "One Lua keymap decides what every key does, on a Neovim-style vim engine.",
+	"author": "Sushant Gupta",
+	"isDesktopOnly": false
+}

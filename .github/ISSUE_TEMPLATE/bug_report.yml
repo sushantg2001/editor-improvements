@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a key or command that does not do what it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you pressed, where, what happened, and what you expected instead. Say where the cursor was, such as a note, a table cell, a modal or a popout window.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a note in Live Preview
+        2. Press ...
+        3. See ...
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+      description: Shown under Settings, General. The plugin relies on Obsidian internals that can change between versions.
+      placeholder: 1.15.1
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Operating system, desktop or mobile, and keyboard layout. Key handling differs between them.
+      placeholder: Linux, KDE Plasma, desktop, US layout
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Screenshots or console errors. Leave out personal paths and names, since this issue is public.
+    validations:
+      required: false
