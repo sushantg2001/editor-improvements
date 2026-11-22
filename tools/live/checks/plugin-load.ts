@@ -4,8 +4,8 @@ import { PLUGIN_ID } from "../launch";
 const id = JSON.stringify(PLUGIN_ID);
 
 export default {
-	name: "empty-plugin",
-	covers: ["PHASE-0"],
+	name: "plugin-load",
+	covers: ["LIFE-A2"],
 	mobile: true,
 	async run(t) {
 		const errorsBefore = t.page.exceptions.length;

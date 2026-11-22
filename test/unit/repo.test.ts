@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import manifest from "../../manifest.json";
 import pkg from "../../package.json";
+import versions from "../../versions.json";
 import { BUDGET_BYTES, overBudget } from "../../tools/release/size";
 
 describe("repository rules", () => {
@@ -13,9 +14,13 @@ describe("repository rules", () => {
 		expect(loose).toEqual([]);
 	});
 
-	test("REPO-R8: the manifest has the plugin id and runs on mobile", () => {
+	test("REPO-R8: the manifest has the plugin id and is not marked desktop-only", () => {
 		expect(manifest.id).toBe("editor-improvements");
 		expect(manifest.isDesktopOnly).toBe(false);
+	});
+
+	test("REPO-R11: versions.json maps the first release to the minimum Obsidian version", () => {
+		expect(versions["1.0.0"]).toBe(manifest.minAppVersion);
 	});
 
 	test("REPO: package.json and manifest.json carry the same version", () => {

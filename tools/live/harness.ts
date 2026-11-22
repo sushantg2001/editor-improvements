@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { listTargets, Page, sleep } from "./cdp";
 import { focusTestWindow } from "./focus";
 import { parseKey } from "./keys";
-import { FIXTURE_VAULT, type Instance } from "./launch";
+import { FIXTURE_VAULT, type Instance, PLUGIN_ID } from "./launch";
 
 const XKEY = join(import.meta.dir, "xkey.py");
 const ROUTER = readFileSync(join(import.meta.dir, "probes/router.js"), "utf8");
@@ -219,6 +219,60 @@ export class Harness {
 		this.cleanup(() => this.eval("window.__R && window.__R.restore()"));
 	}
 
+	/** The plugin's state: inactive, active or safe. */
+	pluginState(): Promise<string> {
+		return this.eval<string>(`app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].lifecycle.state`);
+	}
+
+	/** Writes a config and sets the plugin up. It is put back when the check ends. */
+	async activatePlugin(config: string): Promise<void> {
+		this.cleanup(() => this.deactivatePlugin());
+		await this.writeConfig(config);
+		await this.eval(`app.plugins.plugins[${JSON.stringify(PLUGIN_ID)}].lifecycle.setUp()`);
+	}
+
+	/** Writes `init.lua` in the plugin's config folder. */
+	writeConfig(config: string): Promise<unknown> {
+		return this.eval(`(async () => {
+			const adapter = app.vault.adapter;
+			const folder = app.vault.configDir + "/editor-improvements";
+			if (!(await adapter.exists(folder))) await adapter.mkdir(folder);
+			await adapter.write(folder + "/init.lua", ${JSON.stringify(config)});
+			return true;
+		})()`);
+	}
+
+	private deactivatePlugin(): Promise<unknown> {
+		const id = JSON.stringify(PLUGIN_ID);
+		return this.eval(`(async () => {
+			const prefix = "editor-improvements:" + app.appId + ":";
+			localStorage.setItem(prefix + "setup", JSON.stringify("declined"));
+			localStorage.removeItem(prefix + "safe-mode");
+			await app.plugins.disablePlugin(${id});
+			await app.vault.saveConfig();
+			const folder = app.vault.configDir + "/editor-improvements";
+			if (await app.vault.adapter.exists(folder)) await app.vault.adapter.rmdir(folder, true);
+			await app.plugins.enablePlugin(${id});
+			return true;
+		})()`);
+	}
+
+	/** Reloads the window in the middle of a check. */
+	async reloadWindow(): Promise<void> {
+		await this.eval("app.workspace.saveLayout()");
+		await this.reloadWith(() => this.page.send("Page.reload"));
+		await this.eval(PROBE);
+	}
+
+	/** Waits until an expression in the page is true. */
+	async waitFor(expression: string, timeoutMs = 4000): Promise<void> {
+		const deadline = Date.now() + timeoutMs;
+		while (!(await this.eval<boolean>(expression))) {
+			if (Date.now() > deadline) throw new Error(`timed out waiting for: ${expression}`);
+			await sleep(50);
+		}
+	}
+
 	/** Opens a note in a popout window and returns that window's page. */
 	async openPopout(path: string): Promise<Page> {
 		const before = new Set((await listTargets(this.instance.port)).map((target) => target.id));
@@ -243,6 +297,8 @@ export class Harness {
 		await this.eval(`(() => {
 			const { clipboard } = window.require("electron");
 			window.__clipboard = { text: clipboard.readText(), html: clipboard.readHTML(), image: clipboard.readImage() };
+			// What you had copied can be a secret, so no check may ever read or report it.
+			clipboard.writeText("e2e-clipboard-placeholder");
 			return true;
 		})()`);
 		this.cleanup(() =>

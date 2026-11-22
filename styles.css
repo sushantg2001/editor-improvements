@@ -1,0 +1,17 @@
+.editor-improvements-status {
+	cursor: pointer;
+	font-weight: var(--font-semibold);
+}
+
+.editor-improvements-status.is-safe {
+	color: var(--text-on-accent);
+	background-color: var(--color-red);
+	border-radius: var(--radius-s);
+	padding-inline: var(--size-4-1);
+}
+
+.editor-improvements-error {
+	color: var(--text-error);
+	white-space: pre-wrap;
+	user-select: text;
+}

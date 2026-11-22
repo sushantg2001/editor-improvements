@@ -20,6 +20,9 @@
 		"gates": "bun run typecheck && bun run lint && bun test && bun run build && bun run size"
 	},
 	"devDependencies": {
+		"@codemirror/commands": "6.11.1",
+		"@codemirror/language": "6.13.1",
+		"@codemirror/search": "6.7.2",
 		"@codemirror/state": "6.7.6",
 		"@codemirror/view": "6.43.15",
 		"@eslint/js": "10.0.1",
@@ -27,9 +30,13 @@
 		"esbuild": "0.28.2",
 		"eslint": "10.15.0",
 		"eslint-plugin-obsidianmd": "0.6.0",
+		"happy-dom": "21.0.4",
 		"jiti": "2.7.0",
 		"obsidian": "1.14.4",
 		"typescript": "6.0.3",
 		"typescript-eslint": "8.73.0"
+	},
+	"dependencies": {
+		"@saberzero1/codemirror-vim": "6.4.20"
 	}
 }
