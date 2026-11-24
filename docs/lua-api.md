@@ -10,7 +10,7 @@ Maps a key in the editor.
 
 - **`mode`:** `"n"`, `"i"`, `"v"`, `"x"`, `"o"`, `""` for normal, visual and operator-pending, or a list of these.
 - **`lhs`:** the keys to press.
-- **`rhs`:** keys to send, or a Lua function.
+- **`rhs`:** keys to send, or a Lua function. The keys can include [`<Nop>` and `<Cmd>...<CR>`](configuration.md#what-a-mapping-can-send). An empty string is an error, so write `"<Nop>"` for a key that does nothing.
 - **`opts.remap`:** whether the keys in `rhs` can trigger other mappings. The default is `false`.
 - **`opts.desc`:** a description.
 - **`opts.silent`:** accepted, and has no effect.

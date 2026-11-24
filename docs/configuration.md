@@ -42,7 +42,7 @@ end)
 | `<CR>`, `<Esc>`, `<Tab>`, `<BS>`, `<Del>`, `<Space>` | Enter, Escape, Tab, Backspace, Delete, Space |
 | `<Up>`, `<Down>`, `<Left>`, `<Right>` | Arrow keys |
 | `<Home>`, `<End>`, `<PageUp>`, `<PageDown>`, `<Insert>` | Navigation keys |
-| `<F1>` to `<F12>` | Function keys |
+| `<F1>` to `<F24>` | Function keys |
 | `<C-c>` | Ctrl+C |
 | `<A-x>` or `<M-x>` | Alt+X, or Option+X on macOS |
 | `<D-s>` | Cmd+S on macOS, Super+S elsewhere |
@@ -53,6 +53,30 @@ end)
 Names are not case-sensitive, but letters are: `<C-A>` means Ctrl+Shift+A.
 
 Set `vim.g.mapleader` before the mappings that use it. The default leader is `\`.
+
+A `<Name>` that is not a key, such as `<Foo>`, is read as the text `<Foo>`, as in Neovim. Your config still loads, and a notice names the key, since this is usually a typo. Write `<lt>Foo>` when you mean the text.
+
+## What a mapping can send
+
+The right-hand side of `vim.keymap.set` and a `keys:` action can also use these.
+
+| You write | What it does |
+| --- | --- |
+| `<Nop>` | Nothing. `vim.keymap.set("n", "Z", "<Nop>")` turns `Z` off. |
+| `<Cmd>nohlsearch<CR>` | Runs an ex command without typing `:`. Normal and insert mode stay as they are. |
+| `<Ignore>` | Nothing. It is skipped. |
+| `<lt>` | The `<` key, in every mode, in `:` and `/` prompts, and after `r`, `f` or `t`. |
+| `<Plug>(name)` | A mapping named `<Plug>(name)`. It is reached even when `remap` is off. |
+
+```lua
+-- Clear the search highlight with Escape
+vim.keymap.set("n", "<Esc>", "<Cmd>nohlsearch<CR>")
+
+-- Surround the word under the cursor with < and >
+vim.keymap.set("n", "<leader>s", "ciw<lt>><Esc>P")
+```
+
+Between `<Cmd>` and `<CR>` write plain text. `<lt>`, `<Bar>`, `<Bslash>` and `<Space>` stand for their characters, and other keys are an error. Keys can come before and after it: `<Cmd>nohlsearch<CR><Esc>`. In visual mode, the command ends visual mode, as `:` does.
 
 ## Where a mapping applies
 
@@ -77,7 +101,7 @@ Pass one of these as the third argument of `obsidian.keymap.set`.
 | Action | What it does |
 | --- | --- |
 | `obsidian:<id>` | Runs an Obsidian command, such as `obsidian:app:open-settings` |
-| `keys:<keys>` | Sends keys to vim, such as `keys:gg` |
+| `keys:<keys>` | Sends keys to vim, such as `keys:gg`. It can use [`<Cmd>` and `<Nop>`](#what-a-mapping-can-send). |
 | `ex:<command>` | Runs a vim ex command, such as `ex:nohlsearch` |
 | `native:copy`, `native:cut`, `native:paste` | Clipboard |
 | `native:paste-plain` | Pastes as plain text |

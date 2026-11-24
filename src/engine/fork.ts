@@ -4,17 +4,49 @@ import { EditorView } from "@codemirror/view";
 import { getCM, setLivePreviewField, vim, Vim } from "@saberzero1/codemirror-vim";
 import { editorLivePreviewField } from "obsidian";
 import { log } from "../diagnostics/log";
-import { toEngine } from "../notation/engine";
-import type { Key, KeySeq } from "../notation/parse";
+import { rhsToEngine, toEngine } from "../notation/engine";
+import type { Key, KeySeq, Rhs } from "../notation/parse";
 import type { Engine, EngineGeneration, EngineMode, MapMode } from "./engine";
 
 const CONTEXTS: Record<MapMode, string> = { n: "normal", i: "insert", v: "visual", x: "visual", o: "operatorPending" };
+const EX_CONTEXTS = ["normal", "visual", "operatorPending", "insert"];
 
 type VimCM = NonNullable<ReturnType<typeof getCM>>;
+
+let ltKeyInstalled = false;
+
+/**
+ * A right-hand side spells `<` as `<lt>`, as the engine reads a bare `<` and the `word>` after it as one key,
+ * and in insert mode and prompts takes a bare `<` for <Home>. Insert mode and prompts type `<lt>` as `<`,
+ * but the engine's commands know only `<`, so this hands it to them as `<`.
+ */
+function installLtKey(): void {
+	if (ltKeyInstalled) return;
+	ltKeyInstalled = true;
+	const handleKey = Vim.handleKey.bind(Vim);
+	Vim.handleKey = (cm, key, origin) => handleKey(cm, key === "<lt>" ? "<" : key, origin);
+}
+
+/** The key that runs each `<Cmd>` command, as the engine has no `<Cmd>`. The keymap is shared, so this is too. */
+const exKeys = new Map<string, string>();
+
+function exKey(command: string): string {
+	let key = exKeys.get(command);
+	if (key) return key;
+	key = `<EditorImprovementsCmd${exKeys.size + 1}>`;
+	exKeys.set(command, key);
+	// Built-in, so a noremap right-hand side reaches it.
+	for (const context of EX_CONTEXTS) Vim._mapCommand({ keys: key, type: "keyToEx", exArgs: { input: command }, context, builtin: true });
+	return key;
+}
 
 export class ForkEngine implements Engine {
 	private readonly savedOptions = new Map<string, unknown>();
 	private host: EditorView | null = null;
+
+	constructor() {
+		installLtKey();
+	}
 
 	extension(): Extension {
 		setLivePreviewField(editorLivePreviewField);
@@ -52,9 +84,25 @@ export class ForkEngine implements Engine {
 		return "n";
 	}
 
-	feedKeys(view: EditorView, keys: KeySeq): void {
+	feedKeys(view: EditorView, rhs: Rhs): void {
 		const cm = this.cm(view);
-		if (cm) Vim.feedKeys(cm as Parameters<typeof Vim.feedKeys>[0], toEngine(keys), { noremap: true });
+		if (!cm) return;
+		// An ex command runs between the keys around it, so no key is bound for it.
+		let keys: KeySeq = [];
+		const feed = (): void => {
+			if (keys.length > 0) Vim.feedKeys(cm as Parameters<typeof Vim.feedKeys>[0], rhsToEngine(keys, exKey), { noremap: true });
+			keys = [];
+		};
+		for (const step of rhs) {
+			if (typeof step === "string") {
+				keys.push(step);
+				continue;
+			}
+			feed();
+			const error = this.runEx(view, step.ex);
+			if (error) throw new Error(error);
+		}
+		feed();
 	}
 
 	deliverKey(view: EditorView, key: Key): void {
@@ -91,7 +139,7 @@ export class ForkEngine implements Engine {
 		const errors: string[] = [];
 		for (const map of generation.maps) {
 			const lhs = toEngine(map.lhs);
-			const rhs = toEngine(map.rhs);
+			const rhs = rhsToEngine(map.rhs, exKey);
 			try {
 				if (map.noremap) Vim.noremap(lhs, rhs, CONTEXTS[map.mode]);
 				else Vim.map(lhs, rhs, CONTEXTS[map.mode]);
@@ -113,6 +161,7 @@ export class ForkEngine implements Engine {
 
 	clear(): void {
 		Vim.mapclear();
+		exKeys.clear();
 		for (const [name, value] of this.savedOptions) {
 			const result: unknown = Vim.setOption(name, value);
 			if (result instanceof Error) log("warn", "engine", result.message);

@@ -350,6 +350,7 @@ export class Lifecycle implements UiController {
 			.filter((mapping) => broken.has(mapping.action))
 			.map((mapping) => `${keysToString(mapping.keys)} in ${mapping.context}: ${mapping.action} is not available`);
 		errors.push(...engine.apply(config.engine));
+		errors.push(...config.warnings);
 		router.setKeymap(mappings, config.timeoutlen, config.strictkeys);
 		this.hasGoodConfig = true;
 		this.configErrors = errors;

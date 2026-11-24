@@ -1,7 +1,7 @@
 import type { ActionDef, ActionRegistry, ActionResult, RunContext } from "../actions/registry";
 import { activeEditorView, commandsOf } from "../actions/registry";
 import type { Engine, EngineGeneration, MapMode } from "../engine/engine";
-import { type KeySeq, keysToString, NotationError, parseKeys } from "../notation/parse";
+import { type KeySeq, keysToString, NotationError, parseKeys, parseRhs, type Rhs } from "../notation/parse";
 import type { RouterMapping } from "../router/router";
 import type { App } from "obsidian";
 import { PRELUDE } from "./prelude";
@@ -23,6 +23,8 @@ export interface CompiledConfig {
 	timeoutlen: number;
 	strictkeys: boolean;
 	luaActions: ActionDef[];
+	/** Problems that do not stop the config from loading. */
+	warnings: string[];
 }
 
 export type ConfigResult = { ok: true; config: CompiledConfig } | { ok: false; error: string };
@@ -42,6 +44,7 @@ class ConfigRun {
 	readonly options = new Map<string, unknown>();
 	readonly commands: string[] = [];
 	readonly luaActions: ActionDef[] = [];
+	readonly warnings = new Set<string>();
 	timeoutlen = 1000;
 	strictkeys = true;
 	loading = true;
@@ -78,15 +81,29 @@ class ConfigRun {
 		return leader;
 	}
 
-	private keys(text: string): KeySeq {
+	private readonly unknownName = (token: string): void => {
+		this.warnings.add(`Unknown key ${token} is read as text. Write <lt>${token.slice(1)} if the text is meant.`);
+	};
+
+	private parse<T>(read: () => T): T {
 		try {
-			const keys = parseKeys(text, this.leader());
-			if (keys.length === 0) raise(this.L, "keys must not be empty");
-			return keys;
+			return read();
 		} catch (error) {
 			if (error instanceof NotationError) raise(this.L, error.message);
 			throw error;
 		}
+	}
+
+	private keys(text: string): KeySeq {
+		const keys = this.parse(() => parseKeys(text, this.leader(), this.unknownName));
+		if (keys.length === 0) raise(this.L, "keys must not be empty");
+		return keys;
+	}
+
+	/** Reads a right-hand side. `<Nop>` and `<Ignore>` may leave it empty, but the text itself may not be. */
+	private rhs(text: string): Rhs {
+		if (text === "") raise(this.L, 'rhs must not be empty. Use "<Nop>" for a key that does nothing.');
+		return this.parse(() => parseRhs(text, this.leader(), this.unknownName));
 	}
 
 	/** Reads an options table, refusing any option that is not supported. */
@@ -175,7 +192,7 @@ class ConfigRun {
 		const opts = this.opts(4, KEYMAP_OPTIONS);
 		const type = lua.lua_type(L, 3);
 		if (type !== lua.LUA_TSTRING && type !== lua.LUA_TFUNCTION) raise(L, "rhs must be keys or a function");
-		const rhs = type === lua.LUA_TSTRING ? this.keys(this.text(3)) : null;
+		const rhs = type === lua.LUA_TSTRING ? this.rhs(this.text(3)) : null;
 		const action = rhs ? null : this.addFunction(3, opts.desc);
 		for (const mode of modes) {
 			this.removeMapping(mode, lhs);
@@ -212,6 +229,7 @@ class ConfigRun {
 		if (type === lua.LUA_TSTRING) {
 			action = this.text(3);
 			if (!/^(?:keys|ex|obsidian|native|plugin):./.test(action)) raise(L, `Unknown action: "${action}"`);
+			if (action.startsWith("keys:")) this.rhs(action.slice("keys:".length));
 		} else if (type === lua.LUA_TFUNCTION) {
 			action = this.addFunction(3, opts.desc);
 		} else {
@@ -396,6 +414,7 @@ export function runConfig(files: Map<string, string>, host: ConfigHost): ConfigR
 			timeoutlen: run.timeoutlen,
 			strictkeys: run.strictkeys,
 			luaActions: run.luaActions,
+			warnings: [...run.warnings],
 		},
 	};
 }

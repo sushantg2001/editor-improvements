@@ -2,7 +2,7 @@ import type { EditorView } from "@codemirror/view";
 import type { App } from "obsidian";
 import { log } from "../diagnostics/log";
 import type { Engine, EngineMode } from "../engine/engine";
-import { parseKeys } from "../notation/parse";
+import { parseRhs } from "../notation/parse";
 
 export type Context = "editor" | "input" | "transient" | "modal" | `view:${string}` | "global";
 export type ActionResult = "handled" | "not-applicable" | "error";
@@ -117,7 +117,6 @@ export class ActionRegistry {
 	}
 
 	private keysAction(id: string, text: string): ActionDef {
-		const keys = parseKeys(text);
 		return {
 			id,
 			title: `Keys: ${text}`,
@@ -125,7 +124,8 @@ export class ActionRegistry {
 			run: (context) => {
 				const view = this.editorFor(context);
 				if (!view) return "not-applicable";
-				this.engine.feedKeys(view, keys);
+				// Parsed here, so bad notation is an error of this run and `get` never throws.
+				this.engine.feedKeys(view, parseRhs(text));
 				return "handled";
 			},
 		};
