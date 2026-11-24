@@ -1,6 +1,6 @@
 {
 	"name": "editor-improvements",
-	"version": "0.0.0",
+	"version": "1.0.0",
 	"private": true,
 	"description": "An Obsidian plugin in which one Lua keymap decides what every key does, on a Neovim-style vim engine.",
 	"license": "MIT",
