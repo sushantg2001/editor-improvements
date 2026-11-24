@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { toEngine } from "../../src/notation/engine";
+import { rhsToEngine, toEngine } from "../../src/notation/engine";
 import { fromEvent, type KeyEvent } from "../../src/notation/event";
-import { isChord, parseKeys } from "../../src/notation/parse";
+import { isChord, parseKeys, parseRhs } from "../../src/notation/parse";
 
 const event = (fields: Partial<KeyEvent> & { key: string }, altGraph = false): KeyEvent => ({
 	code: "", keyCode: 0, ctrlKey: false, altKey: false, metaKey: false, shiftKey: false, isComposing: false,
@@ -25,6 +25,29 @@ describe("key notation", () => {
 	test("an unknown <word> is typed literally, and a bad chord is an error", () => {
 		expect(parseKeys("<foo>")).toEqual(["<lt>", "f", "o", "o", ">"]);
 		expect(() => parseKeys("<C-nope>")).toThrow("Unknown key");
+	});
+
+	test("NOTATION-A13: an unknown <Name> is text and is reported, <Plug> and F13 to F24 are keys", () => {
+		const unknown: string[] = [];
+		expect(parseKeys("<F13><F24><plug>(x)<foo><a b><x>", "\\", (token) => unknown.push(token))).toEqual([
+			"<F13>", "<F24>", "<Plug>", "(", "x", ")", "<lt>", "f", "o", "o", ">", "<lt>", "a", "<Space>", "b", ">", "<lt>", "x", ">",
+		]);
+		expect(unknown).toEqual(["<foo>"]);
+		parseRhs("<Cmd>s/<Foo>//<CR><F25>", "\\", (token) => unknown.push(token));
+		expect(unknown).toEqual(["<foo>", "<Foo>", "<F25>"]);
+		expect(fromEvent(event({ key: "F13", shiftKey: true }))).toBe("<S-F13>");
+	});
+
+	test("NOTATION-A9: a right-hand side reads <Nop>, <Ignore> and <Cmd>", () => {
+		expect(parseRhs("<Nop>")).toEqual([]);
+		expect(parseRhs("a<ignore>b<NOP>")).toEqual(["a", "b"]);
+		expect(parseRhs("<cmd>w<cr><esc>")).toEqual([{ ex: "w" }, "<Esc>"]);
+		expect(parseRhs("x<Cmd>s/a<Bar>b/c d<lt><Bslash>/<Enter>")).toEqual(["x", { ex: "s/a|b/c d<\\/" }]);
+		expect(parseRhs("<Cmd><leader>x<CR>", ",")).toEqual([{ ex: ",x" }]);
+		expect(() => parseRhs("<Cmd>w")).toThrow("<Cmd> must end with <CR>");
+		expect(() => parseRhs("<Cmd>w<Esc><CR>")).toThrow("Only text can go between <Cmd> and <CR>, not <Esc>");
+		expect(() => parseRhs("<Cmd><Nop><CR>")).toThrow("not <Nop>");
+		for (const lhs of ["<Nop>", "a<Cmd>", "<Ignore>"]) expect(() => parseKeys(lhs)).toThrow("can only be on the right-hand side");
 	});
 
 	test("NOTATION-A6: leader expands when parsed", () => {
@@ -56,6 +79,9 @@ describe("key notation", () => {
 		expect(toEngine(parseKeys("<D-s>"))).toBe("<M-s>");
 		expect(toEngine(parseKeys("<C-D-s>"))).toBe("<C-M-s>");
 		expect(toEngine(parseKeys("a<lt><Bar><Insert>"))).toBe("a<|<Ins>");
+		// A fed `<` stays `<lt>`, so the engine cannot read it and the keys after it as one key.
+		expect(rhsToEngine(parseRhs("r<lt>pa><Bar><D-s><Cmd>w<CR>"), (command) => `<X${command}>`)).toBe("r<lt>pa>|<M-s><Xw>");
+		expect(toEngine(parseKeys("<lt>pa>"))).toBe("<pa>");
 	});
 
 	test("only Ctrl, Alt and Cmd make a chord", () => {

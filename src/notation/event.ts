@@ -7,7 +7,7 @@ const NAMED: Record<string, string> = {
 	Enter: "CR", Escape: "Esc", Tab: "Tab", Backspace: "BS", Delete: "Del", ArrowUp: "Up", ArrowDown: "Down",
 	ArrowLeft: "Left", ArrowRight: "Right", Home: "Home", End: "End", PageUp: "PageUp", PageDown: "PageDown", Insert: "Insert",
 };
-for (let n = 1; n <= 12; n++) NAMED[`F${n}`] = `F${n}`;
+for (let n = 1; n <= 24; n++) NAMED[`F${n}`] = `F${n}`;
 
 const IGNORED = new Set(["Control", "Shift", "Alt", "Meta", "AltGraph", "CapsLock", "NumLock", "ScrollLock", "Fn", "OS", "Dead", "Process", "Unidentified"]);
 

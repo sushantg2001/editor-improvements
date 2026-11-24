@@ -52,7 +52,7 @@ describe("Lua config", () => {
 		expect(config.timeoutlen).toBe(500);
 		expect(config.mappings.some((m) => m.context === "global" && m.keys.join("") === "<C-p>")).toBe(true);
 		expect(config.mappings.some((m) => m.context === "editor:n" && m.keys.join("") === "<Space>f")).toBe(true);
-		expect(config.engine.maps.some((m) => m.mode === "i" && m.lhs.join("") === "jk" && m.rhs.join("") === "<Esc>")).toBe(true);
+		expect(config.engine.maps.some((m) => m.mode === "i" && m.lhs.join("") === "jk" && m.rhs.length === 1 && m.rhs[0] === "<Esc>")).toBe(true);
 	});
 
 	test("vim.keymap.set maps keys in the engine, and functions in the router", () => {
@@ -107,6 +107,35 @@ describe("Lua config", () => {
 		const config = ok(load(`vim.keymap.set("n", "x", "obsidian:switcher:open")`));
 		expect(config.mappings).toEqual([]);
 		expect(config.engine.maps[0]?.rhs[0]).toBe("o");
+	});
+
+	test("NOTATION-A9: vim.keymap.set and keys: read <Nop> and <Cmd>", () => {
+		const config = ok(load(`vim.keymap.set("n", "z", "<Nop>")
+			vim.keymap.set({ "n", "i" }, "<C-CR>", "<cmd>w<cr><esc>")
+			obsidian.keymap.set("editor:n", "Q", "keys:<Cmd>s/a/b/<CR>")`));
+		expect(config.engine.maps.map((m) => [m.mode, m.lhs.join(""), m.rhs])).toEqual([
+			["n", "z", []],
+			["n", "<C-CR>", [{ ex: "w" }, "<Esc>"]],
+			["i", "<C-CR>", [{ ex: "w" }, "<Esc>"]],
+		]);
+		expect(config.warnings).toEqual([]);
+		for (const [source, message] of [
+			[`vim.keymap.set("n", "z", "")`, 'Use "<Nop>"'],
+			[`vim.keymap.set("n", "<Nop>", "x")`, "<Nop> can only be on the right-hand side"],
+			[`vim.keymap.set("n", "z", "<Cmd>w")`, "<Cmd> must end with <CR>"],
+			[`obsidian.keymap.set("editor:n", "Q", "keys:<Cmd>w")`, "<Cmd> must end with <CR>"],
+		] as const) {
+			const result = load(source);
+			expect(result.ok).toBe(false);
+			if (!result.ok) expect(result.error).toContain(message);
+		}
+	});
+
+	test("NOTATION-A13: an unknown <Name> loads as text with a warning", () => {
+		const config = ok(load(`vim.keymap.set("n", "<F13>", "<Plug>(x)<Foo>")
+			obsidian.keymap.set("editor:n", "<Bar1>", "keys:<Foo>")`));
+		expect(config.engine.maps[0]?.rhs).toEqual(["<Plug>", "(", "x", ")", "<lt>", "F", "o", "o", ">"]);
+		expect(config.warnings).toEqual(["Unknown key <Foo> is read as text. Write <lt>Foo> if the text is meant.", "Unknown key <Bar1> is read as text. Write <lt>Bar1> if the text is meant."]);
 	});
 
 	test("options reach the router and the engine", () => {

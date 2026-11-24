@@ -1,6 +1,6 @@
 import type { Extension } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
-import type { Key, KeySeq } from "../notation/parse";
+import type { Key, KeySeq, Rhs } from "../notation/parse";
 
 export type EngineMode = "n" | "i" | "v" | "x" | "o" | "R" | "c";
 
@@ -10,7 +10,7 @@ export type MapMode = "n" | "i" | "v" | "x" | "o";
 export interface EngineMap {
 	mode: MapMode;
 	lhs: KeySeq;
-	rhs: KeySeq;
+	rhs: Rhs;
 	noremap: boolean;
 }
 
@@ -28,8 +28,8 @@ export interface Engine {
 	release(): void;
 	isAttached(view: EditorView): boolean;
 	mode(view: EditorView): EngineMode;
-	/** Runs keys as if typed, without applying user mappings to them. */
-	feedKeys(view: EditorView, keys: KeySeq): void;
+	/** Runs keys as if typed, without applying user mappings to them, and the ex commands between them. Throws when a command fails. */
+	feedKeys(view: EditorView, rhs: Rhs): void;
 	/** Delivers one key held back by the router, as if it had just been typed. */
 	deliverKey(view: EditorView, key: Key): void;
 	/** Runs an ex command. Returns an error message, or null. */
