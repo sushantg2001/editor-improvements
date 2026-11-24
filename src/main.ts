@@ -1,11 +1,17 @@
 import { Plugin } from "obsidian";
+import { createLifecycle } from "./container";
+import type { Lifecycle } from "./lifecycle/lifecycle";
 
-/**
- * The plugin entry point. It loads nothing yet, so an empty plugin can be
- * shown to load and unload cleanly before any part is built on it.
- */
+/** The plugin entry point. Everything it does lives in the lifecycle. */
 export default class EditorImprovementsPlugin extends Plugin {
-	override onload(): void {}
+	lifecycle: Lifecycle | null = null;
 
-	override onunload(): void {}
+	override async onload(): Promise<void> {
+		this.lifecycle = createLifecycle(this);
+		await this.lifecycle.load();
+	}
+
+	override onunload(): void {
+		this.lifecycle?.unload();
+	}
 }

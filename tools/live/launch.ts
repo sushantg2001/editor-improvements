@@ -168,6 +168,8 @@ export async function launch(options: LaunchOptions = {}): Promise<Instance> {
 		const instance = new Instance(child, dir, vault, port, page);
 		await instance.waitReady(false);
 		const enabled = await page.eval<boolean>(`(async () => {
+			// Stops the first-run prompt. Checks that need the plugin active turn it on themselves.
+			localStorage.setItem("editor-improvements:" + app.appId + ":setup", JSON.stringify("declined"));
 			await app.plugins.setEnable(true);
 			await app.plugins.loadManifests();
 			const enabled = await app.plugins.enablePluginAndSave(${JSON.stringify(PLUGIN_ID)});

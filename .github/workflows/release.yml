@@ -168,7 +168,8 @@ jobs:
           subject-path: |
             main.js
             manifest.json
+            styles.css
       - name: Attach files and publish the draft
         run: |
-          gh release upload "$TAG" main.js manifest.json --clobber
+          gh release upload "$TAG" main.js manifest.json styles.css --clobber
           gh release edit "$TAG" --draft=false --verify-tag

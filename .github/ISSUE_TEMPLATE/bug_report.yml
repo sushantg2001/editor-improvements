@@ -42,6 +42,20 @@ body:
       placeholder: Linux, KDE Plasma, desktop, US layout
     validations:
       required: true
+  - type: input
+    id: state
+    attributes:
+      label: Status bar
+      description: What the plugin shows in the status bar, such as NORMAL or SAFE MODE.
+    validations:
+      required: false
+  - type: textarea
+    id: config
+    attributes:
+      label: Smallest init.lua that shows the problem
+      render: lua
+    validations:
+      required: false
   - type: textarea
     id: context
     attributes:
