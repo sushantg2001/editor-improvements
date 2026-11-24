@@ -7,11 +7,17 @@ const CONFLICTS: Record<string, string> = {
 	"vim-tools": "Vim Tools",
 };
 
-/** The name of an enabled plugin that also takes over keys, if any. */
+interface PluginManager {
+	enabledPlugins: Set<string>;
+	manifests: Record<string, unknown>;
+}
+
+/** The name of an installed, enabled plugin that also takes over keys, if any. */
 export function findConflict(app: App): string | null {
-	const enabled = (app as unknown as { plugins: { enabledPlugins: Set<string> } }).plugins.enabledPlugins;
+	const plugins = (app as unknown as { plugins: PluginManager }).plugins;
 	for (const [id, name] of Object.entries(CONFLICTS)) {
-		if (enabled.has(id)) return name;
+		// The enabled list keeps the ids of deleted plugins, which never load.
+		if (plugins.enabledPlugins.has(id) && Object.hasOwn(plugins.manifests, id)) return name;
 	}
 	return null;
 }
